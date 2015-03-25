@@ -88,14 +88,60 @@ Section Foo.
     apply eq_pp_qr.
   Qed.
 
-  Definition colimit_unicity (G:graph) (D: diagram G) (X Y:Type) (q : forall i, D i -> X) (r : forall i, D i -> Y) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
+ Definition colimit_unicity (G:graph) (D: diagram G) (X Y:Type) (q : forall i, D i -> X) (r : forall i, D i -> Y) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
              (colimX : is_colimit G D X q pp_q)
              (colimY : is_colimit G D Y r pp_r)
   : X <~> Y.
     refine (equiv_adjointify _ _ _ _).
     - exact (equiv_inv (IsEquiv := (colimX Y)) (r;pp_r)).
     - exact (equiv_inv (IsEquiv := (colimY X)) (q;pp_q)).
-    - intro x.
+    - intro y.
+      match goal with
+        |[|- ?ggg ?rrr (?fff ?qqq _) = _] =>
+         set (g := ggg); set (f := fff); set (rr := rrr); set (qq := qqq)
+      end.
+      set (ff := f qq). set (gg := g rr).
+      revert y.
+      refine (ap10 (f := gg o ff) (g:=idmap) _).
+      refine (@equiv_inj _ _ _ (colimY Y) _ _ _).
+
+      refine (cone_morphism _ _ _ _ _ _ _ _ _).
+      + intros i x.
+        etransitivity; [simpl | exact (ap10 (apD10 (eisretr _ (IsEquiv := colimX Y) (r;pp_r))..1 i) x)]. simpl.
+        apply ap.
+        exact (ap10 (apD10 (eisretr _ (IsEquiv := colimY X) (q;pp_q))..1 i) x).
+      + simpl. intros i j φ x.
+        rewrite ap_idmap.
+        rewrite ap_compose.
+        unfold ff, gg, qq, rr, f, g. simpl.
+        clear ff; clear gg; clear qq; clear rr; clear f; clear g.
+        unfold equiv_inv.
+        match goal with
+          |[|- ap ?fff (ap ?ggg _) @ (ap _ _ @ _) = _] => set (f := fff); set (g := ggg)
+        end.
+        repeat rewrite concat_p_pp.
+        apply moveR_pM.
+        repeat rewrite concat_pp_p.
+        apply moveL_Mp.
+
+        rewrite <- ap_pp.
+        rewrite <- ap_V.
+        rewrite <- ap_pp.
+        repeat rewrite <- ap10_ap_precompose.
+        rewrite 
+        
+        match goal with
+          |[|- ?PP1 @ (?PP2 @ ?PP3) = ?QQ1 @ (?QQ2 @ ?QQ3)] =>
+           set (P1 := PP1);
+             set (P2 := PP2);
+             set (P3 := PP3);
+             set (Q1 := QQ1);
+             set (Q2 := QQ2);
+             set (Q3 := QQ3)
+        end. simpl in *.
+                                                           
+
+  Qed.
       
   
   Lemma BX_colimit_CN_BX (G:Type) (BG := LoopSpace G)
