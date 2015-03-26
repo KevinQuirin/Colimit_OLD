@@ -88,10 +88,18 @@ Section Foo.
     apply eq_pp_qr.
   Qed.
 
- Definition colimit_unicity (G:graph) (D: diagram G) (X Y:Type) (q : forall i, D i -> X) (r : forall i, D i -> Y) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
-             (colimX : is_colimit G D X q pp_q)
-             (colimY : is_colimit G D Y r pp_r)
-  : X <~> Y.
+  Definition cocone (G:graph) (D:diagram G) (T:Type) :=
+    {q : forall i, D i -> T & forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x}.
+
+ Definition colimit_unicity (G:graph) (D: diagram G) (P Q:Type) (q : forall i, D i -> P) (r : forall i, D i -> Q) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
+             (colimX : is_colimit G D P q pp_q)
+             (colimY : is_colimit G D Q r pp_r)
+ : P <~> Q.
+   unfold is_colimit in *.
+   pose (φP := λ X:Type, (λ f : P → X,
+              (λ (i : G) (x : D i), f (q i x);
+              λ (i j : G) (g : G i j) (x : D i), ap f (pp_q i j g x)))). simpl in φP.
+   
     refine (equiv_adjointify _ _ _ _).
     - exact (equiv_inv (IsEquiv := (colimX Y)) (r;pp_r)).
     - exact (equiv_inv (IsEquiv := (colimY X)) (q;pp_q)).

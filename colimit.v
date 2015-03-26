@@ -46,6 +46,33 @@ Section Diagram.
   
 End Diagram.
 
+Section Cocone.
+  
+  Definition cocone {G:graph} (D:diagram G) (T:Type) :=
+    {q : forall i, D i -> T & forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x}.
+
+  
+  Definition path_cocone `{fs : Funext} (G:graph) (D: diagram G) (X:Type) (q r: cocone D X)  
+             (eq_qr : forall i, q.1 i == r.1 i)
+             (eq_pp_qr : forall i j f x, q.2 i j f x @ eq_qr i x = eq_qr j (diagram1 D f x) @ r.2 i j f x)
+  : q=r.
+    destruct q as [q pp_q], r as [r pp_r].
+    refine (path_sigma' _ (path_forall _ _ (λ i, path_forall _ _ (eq_qr i))) _). simpl.
+    apply path_forall; intro i.
+    apply path_forall; intro j.
+    apply path_forall; intro f.
+    apply path_forall; intro x.
+
+    repeat rewrite transport_forall_constant.
+    rewrite transport_paths_FlFr. simpl.
+    rewrite concat_pp_p. apply moveR_Vp. simpl.
+    rewrite (ap_ap2_path_forall (λ u, D u) (λ _, λ _, X) q r eq_qr i x).
+    rewrite (ap_ap2_path_forall (λ u, D u) (λ _, λ _, X) q r eq_qr j (diagram1 D f x)).
+    apply eq_pp_qr.
+  Qed.
+  
+End Cocone.
+
 (* In this module is the higher inductive definition of colimits *)
 Module Export colimit_HIT.
 
@@ -116,19 +143,28 @@ Section colimit_universal_property.
 
   Context `{fs : Funext}.
 
-  (* Definition 6*)
-  Definition is_colimit (G:graph) (D:diagram G) (P:Type)
-             (q:forall i, D i -> P)
-             (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x)
+  Definition map_to_cocone {G:graph} (D:diagram G) (P:Type) (q:cocone D P) (X:Type) (f: P -> X) : cocone D X.
+    refine (exist _ _ _).
+    - intros i x. exact (f (q.1 i x)).
+    - intros i j g x. exact (ap f (q.2 i j g x)).
+  Defined.
+
+  Definition is_colimit (G:graph) (D:diagram G) (P:Type) (q:cocone D P)
+    := forall X:Type, IsEquiv (map_to_cocone D P q X).
+  
+  (* (* Definition 6*) *)
+  (* Definition is_colimit (G:graph) (D:diagram G) (P:Type) *)
+  (*            (q:forall i, D i -> P) *)
+  (*            (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) *)
              
-    := forall X:Type,
-         IsEquiv (λ f : P -> X,
-                        (existT (λ qq : forall i, D i -> X, forall (i j:G) (f: G i j) (x: D i), qq j (diagram1 D f x) = qq i x)
-                                       (λ i, λ x, f (q i x))
-                                       ( λ i j g x, ap f (pp_q i j g x)))).
+  (*   := forall X:Type, *)
+  (*        IsEquiv (λ f : P -> X, *)
+  (*                       (existT (λ qq : forall i, D i -> X, forall (i j:G) (f: G i j) (x: D i), qq j (diagram1 D f x) = qq i x) *)
+  (*                                      (λ i, λ x, f (q i x)) *)
+  (*                                      ( λ i j g x, ap f (pp_q i j g x)))). *)
 
   Theorem colimit_is_colimit (G:graph) (D:diagram G) 
-  : is_colimit G D (colimit D) (@colim G D) (@pp G D).
+  : is_colimit G D (colimit D) ((@colim G D); (@pp G D)).
     intro Y; simpl.
     refine (isequiv_adjointify _ _ _ _).
     - intros [q pp_q].
@@ -147,56 +183,28 @@ Section colimit_universal_property.
       rewrite colimit_rectnd_beta_pp. hott_simpl.
   Qed.
 
-  (* Definition prod_diag (G:graph) (D:diagram G) (Y : Type) *)
-  (* : diagram G. *)
-  (*   refine (Build_diagram _ _ _). *)
-  (*   - intro i. exact (Y*(D i)). *)
-  (*   - intros i j f x. *)
-  (*     exact (fst x, diagram1 D f (snd x)). *)
-  (* Defined. *)
+  Definition colimit_unicity (G:graph) (D: diagram G) (P Q:Type) (q : forall i, D i -> P) (r : forall i, D i -> Q) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
+             (colimP : is_colimit G D P (q; pp_q))
+             (colimQ : is_colimit G D Q (r; pp_r))
+ : P <~> Q.
+    pose (φP := map_to_cocone D P (q;pp_q)).
+    pose (ψP := λ X, (equiv_inv (IsEquiv := colimP X))).
+    pose (φQ := map_to_cocone D Q (r;pp_r)).
+    pose (ψQ := λ X, (equiv_inv (IsEquiv := colimQ X))).
 
-  (* Definition colimit_prod_diag_q (G:graph) (D:diagram G)  *)
-  (*            (Q : Type) *)
-  (*            (q:forall i, D i -> Q) *)
-  (*            (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) *)
-  (*            (colimQ : is_colimit G D Q q pp_q) *)
-  (*            (Y:Type) *)
-  (* : forall i, (prod_diag G D Y i) -> (Y*Q). *)
-  (*   intros i x. *)
-  (*   exact (fst x, q i (snd x)). *)
-  (* Defined. *)
+    refine (equiv_adjointify (ψP Q (r;pp_r)) (ψQ P (q;pp_q)) _ _).
+    - refine (ap10 _).
+      refine (@equiv_inj _ _ (φQ Q) (colimQ Q) _ _ _).
+      refine (path_cocone _ _ _ _ _ _ _).
+      + intros i x.
+        etransitivity; [simpl | exact (ap10 (apD10 (eisretr (φP Q) (IsEquiv := colimP Q) (r;pp_r))..1 i) x)]. simpl. fold (ψP Q).
+        apply ap.
+        exact (ap10 (apD10 (eisretr _ (IsEquiv := colimQ P) (q;pp_q))..1 i) x).
+      + simpl. intros i j φ x.
+        rewrite ap_idmap.
+        
 
-  (* Definition colimit_prod_diag_pp (G:graph) (D:diagram G)  *)
-  (*            (Q : Type) *)
-  (*            (q:forall i, D i -> Q) *)
-  (*            (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) *)
-  (*            (colimQ : is_colimit G D Q q pp_q) *)
-  (*            (Y:Type) *)
-  (* : forall (i j:G) (f: G i j) (x: prod_diag G D Y i), (colimit_prod_diag_q G D Q q pp_q colimQ Y) _ (diagram1 (prod_diag G D Y) f x) = (colimit_prod_diag_q G D Q q pp_q colimQ Y) _ x. *)
-  (*   intros i j f x. *)
-  (*   unfold colimit_prod_diag_q. simpl. *)
-  (*   refine (path_prod _ _ _ _). *)
-  (*   reflexivity. *)
-  (*   simpl. apply pp_q. *)
-  (* Defined. *)
-
-  (* Definition colimit_prod_diag (G:graph) (D:diagram G)  *)
-  (*            (Q : Type) *)
-  (*            (q:forall i, D i -> Q) *)
-  (*            (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) *)
-  (*            (colimQ : is_colimit G D Q q pp_q) *)
-  (*            (Y:Type) *)
-  (* : is_colimit G (prod_diag G D Y) (Y*Q) (colimit_prod_diag_q G D Q q pp_q colimQ Y) (colimit_prod_diag_pp G D Q q pp_q colimQ Y). *)
-  (*   unfold prod_diag, colimit_prod_diag_q, colimit_prod_diag_pp; simpl. *)
-  (*   intro X; simpl. destruct (colimQ X) as [inv retr sect _]. *)
-  (*   refine (isequiv_adjointify _ _ _ _). *)
-  (*   - intros [qq pp_qq] [y x]. *)
-  (*     simpl. *)
-  (*     apply inv. refine (exist _ _ _). *)
-  (*     intros i u. apply (qq i). exact (y,u). *)
-  (*     intros i j f u. simpl. *)
-  (*     apply (pp_qq i j f (y,u)). exact x. *)
-  (*   - intros x. simpl. *)
+  Qed.
       
   
   Definition colimit_equiv (G:graph) (D:diagram G)
@@ -217,8 +225,8 @@ Section colimit_universal_property.
                                (diagram1 D2 f (path_type i x)) @
                                (pp_q2 i j f (path_type i x) @
                                       ((apD10 (apD10 Hq i) (path_type i x))^ @ ap (q1 i) (eissect (path_type i) x))))) = pp_q1)
-             (H : is_colimit G D1 P q1 pp_q1)
-  : is_colimit G D2 P q2 pp_q2.
+             (H : is_colimit G D1 P (q1; pp_q1))
+  : is_colimit G D2 P (q2; pp_q2).
     destruct Hq.
     destruct Hpp.
     simpl in *.    
