@@ -145,17 +145,18 @@ Section colimit_universal_property.
 
   Context `{fs : Funext}.
 
-  Definition map_to_cocone {G:graph} (D:diagram G) (P:Type) (q:cocone D P) (X:Type) (f: P -> X) : cocone D X.
+  Definition map_to_cocone {G:graph} {D:diagram G} {P:Type} (q:cocone D P) (X:Type) : (P -> X) -> cocone D X.
+    intros f.
     refine (exist _ _ _).
     - intros i x. exact (f (q.1 i x)).
     - intros i j g x. exact (ap f (q.2 i j g x)).
   Defined.
 
-  Definition is_colimit (G:graph) (D:diagram G) (P:Type) (q:cocone D P)
-    := forall X:Type, IsEquiv (map_to_cocone D P q X).
+  Definition is_colimit {G:graph} (D:diagram G) (P:Type) (q:cocone D P)
+    := forall X:Type, IsEquiv (map_to_cocone q X).
   
   Theorem colimit_is_colimit (G:graph) (D:diagram G) 
-  : is_colimit G D (colimit D) ((@colim G D); (@pp G D)).
+  : is_colimit D (colimit D) ((@colim G D); (@pp G D)).
     intro Y; simpl.
     refine (isequiv_adjointify _ _ _ _).
     - intros [q pp_q].
@@ -194,8 +195,8 @@ Section colimit_universal_property.
                                (diagram1 D2 f (path_type i x)) @
                                (pp_q2 i j f (path_type i x) @
                                       ((apD10 (apD10 Hq i) (path_type i x))^ @ ap (q1 i) (eissect (path_type i) x))))) = pp_q1)
-             (H : is_colimit G D1 P (q1; pp_q1))
-  : is_colimit G D2 P (q2; pp_q2).
+             (H : is_colimit D1 P (q1; pp_q1))
+  : is_colimit D2 P (q2; pp_q2).
     destruct Hq.
     destruct Hpp.
     simpl in *.    

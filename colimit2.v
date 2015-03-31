@@ -64,9 +64,9 @@ Section cocone_product.
   Defined.
 
   
-  Lemma colimit_product (Q:Type) (C: cocone D Q) (H: is_colimit G D Q C) : is_colimit G D' (Q * A) (C' C).
+  Lemma colimit_product (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit D' (Q * A) (C' C).
     unfold is_colimit. intros X.
-    assert (H': map_to_cocone D' (Q * A) (C' C) X = ((cocone_product X)^-1) o (map_to_cocone D Q C (A -> X)) o (equiv_fun (curry Q X))).
+    assert (H': map_to_cocone (C' C) X = ((cocone_product X)^-1) o (map_to_cocone C (A -> X)) o (equiv_fun (curry Q X))).
     + apply path_forall; intros F.
       refine (path_sigma _ _ _ _ _).
       - reflexivity.
@@ -115,7 +115,7 @@ Section colimit_unicity.
   Context `{fs : Funext}.
  
   Lemma map_to_cocone_postcompose (G: graph) (D: diagram G) (P: Type) (C: cocone D P) (X Y: Type) (f: X->Y)
-  : (map_to_cocone D P C Y) o (postcompose f) == (postcompose_cocone f) o (map_to_cocone D P C X).
+  : (map_to_cocone C Y) o (postcompose f) == (postcompose_cocone f) o (map_to_cocone C X).
     intros g. destruct C as [q pq].
     refine (path_cocone _ _  _ _ _ _ _).
     + intros i x. reflexivity.
@@ -124,11 +124,11 @@ Section colimit_unicity.
   Defined.
 
 
-  Lemma colimit_unicity (G: graph) (D: diagram G) (P Q: Type) (C: cocone D P) (C': cocone D Q) (colimP : is_colimit G D P C) (colimQ : is_colimit G D Q C')
+  Lemma colimit_unicity (G: graph) (D: diagram G) (P Q: Type) (C: cocone D P) (C': cocone D Q) (colimP : is_colimit D P C) (colimQ : is_colimit D Q C')
   : P <~> Q.
     unfold is_colimit in *.
-    set (φP := map_to_cocone D P C) in *.
-    set (φQ := map_to_cocone D Q C') in *.
+    set (φP := map_to_cocone C) in *.
+    set (φQ := map_to_cocone C') in *.
     refine (BuildEquiv _ _ _  (yoneda_map _ _ _ _)).
     + intros X. transitivity (cocone D X).
       refine (BuildEquiv _ _ (φP X) _).
