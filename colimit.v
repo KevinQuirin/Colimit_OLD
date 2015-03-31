@@ -1,5 +1,5 @@
 Require Export Utf8_core.
-Require Import HoTT HoTT.hit.Truncations Connectedness Types.Record.
+Require Import HoTT.
 Require Import equivalence lemmas.
 
 Set Universe Polymorphism.
@@ -139,6 +139,8 @@ Section colimit_nondep.
   
 End colimit_nondep.
 
+
+
 Section colimit_universal_property.
 
   Context `{fs : Funext}.
@@ -152,17 +154,6 @@ Section colimit_universal_property.
   Definition is_colimit (G:graph) (D:diagram G) (P:Type) (q:cocone D P)
     := forall X:Type, IsEquiv (map_to_cocone D P q X).
   
-  (* (* Definition 6*) *)
-  (* Definition is_colimit (G:graph) (D:diagram G) (P:Type) *)
-  (*            (q:forall i, D i -> P) *)
-  (*            (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) *)
-             
-  (*   := forall X:Type, *)
-  (*        IsEquiv (λ f : P -> X, *)
-  (*                       (existT (λ qq : forall i, D i -> X, forall (i j:G) (f: G i j) (x: D i), qq j (diagram1 D f x) = qq i x) *)
-  (*                                      (λ i, λ x, f (q i x)) *)
-  (*                                      ( λ i j g x, ap f (pp_q i j g x)))). *)
-
   Theorem colimit_is_colimit (G:graph) (D:diagram G) 
   : is_colimit G D (colimit D) ((@colim G D); (@pp G D)).
     intro Y; simpl.
@@ -183,29 +174,7 @@ Section colimit_universal_property.
       rewrite colimit_rectnd_beta_pp. hott_simpl.
   Qed.
 
-  Definition colimit_unicity (G:graph) (D: diagram G) (P Q:Type) (q : forall i, D i -> P) (r : forall i, D i -> Q) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
-             (colimP : is_colimit G D P (q; pp_q))
-             (colimQ : is_colimit G D Q (r; pp_r))
- : P <~> Q.
-    pose (φP := map_to_cocone D P (q;pp_q)).
-    pose (ψP := λ X, (equiv_inv (IsEquiv := colimP X))).
-    pose (φQ := map_to_cocone D Q (r;pp_r)).
-    pose (ψQ := λ X, (equiv_inv (IsEquiv := colimQ X))).
 
-    refine (equiv_adjointify (ψP Q (r;pp_r)) (ψQ P (q;pp_q)) _ _).
-    - refine (ap10 _).
-      refine (@equiv_inj _ _ (φQ Q) (colimQ Q) _ _ _).
-      refine (path_cocone _ _ _ _ _ _ _).
-      + intros i x.
-        etransitivity; [simpl | exact (ap10 (apD10 (eisretr (φP Q) (IsEquiv := colimP Q) (r;pp_r))..1 i) x)]. simpl. fold (ψP Q).
-        apply ap.
-        exact (ap10 (apD10 (eisretr _ (IsEquiv := colimQ P) (q;pp_q))..1 i) x).
-      + simpl. intros i j φ x.
-        rewrite ap_idmap.
-        
-
-  Qed.
-      
   
   Definition colimit_equiv (G:graph) (D:diagram G)
     := λ X, BuildEquiv _ _ _ (colimit_is_colimit G D X).
