@@ -12,14 +12,14 @@ Section cocone_product.
 
   Variable A: Type.
   
-  Definition D' : diagram G.
+  Definition pdt_diagram : diagram G.
     refine (Build_diagram _ _ _).
     + intros i. exact ((D i) * A).
     + simpl. intros i j f x. exact (diagram1 D f (fst x), snd x).
   Defined.
 
  
-  Definition C' {Q: Type} (C: cocone D Q) : cocone D' (Q * A).
+  Definition pdt_cocone {Q: Type} (C: cocone D Q) : cocone pdt_diagram (Q * A).
     unfold cocone in *.
     refine (exist _ _ _). simpl in *.
     intros i z. exact (C.1 i (fst z) , snd z).
@@ -28,7 +28,7 @@ Section cocone_product.
   Defined.
 
 
-  Lemma cocone_product : forall (X:Type), cocone D' X <~> cocone D (A -> X).
+  Lemma cocone_product : forall (X:Type), cocone pdt_diagram X <~> cocone D (A -> X).
     intros X.
     refine (equiv_adjointify _ _ _ _).
     + intros C. unfold cocone in *.
@@ -52,21 +52,10 @@ Section cocone_product.
         rewrite eisretr. reflexivity.
   Defined.
 
-  
-  Lemma curry (Q:Type) (X:Type) : ((Q * A) -> X) <~> (Q -> A -> X).
-    refine (equiv_adjointify _ _ _ _).
-    + intros f C a. exact (f (C, a)).
-    + intros f z. exact (f (fst z) (snd z)).
-    + intros f. apply path_forall; intros C.
-      apply path_forall; intros a. reflexivity.
-    + intros f. apply path_forall; intros z.
-      reflexivity.
-  Defined.
-
-  
-  Lemma colimit_product (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit D' (Q * A) (C' C).
+    
+  Lemma colimit_product (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit pdt_diagram (Q * A) (pdt_cocone C).
     unfold is_colimit. intros X.
-    assert (H': map_to_cocone (C' C) X = ((cocone_product X)^-1) o (map_to_cocone C (A -> X)) o (equiv_fun (curry Q X))).
+    assert (H': map_to_cocone (pdt_cocone C) X = ((cocone_product X)^-1) o (map_to_cocone C (A -> X)) o ((equiv_uncurry Q _ X)^-1)).
     + apply path_forall; intros F.
       refine (path_sigma _ _ _ _ _).
       - reflexivity.
@@ -104,18 +93,12 @@ Section colimit_unicity.
       rewrite <- H. unfold f. rewrite (eisretr (F B)). reflexivity.
   Defined.
 
-  
-  Definition postcompose_cocone {G: graph} {D: diagram G} {X Y: Type} (f: X->Y) : (cocone D X) -> (cocone D Y).
-    intros C.
-    exists (λ i, f o (C.1 i)).
-    intros i j g x. apply ap. apply C.2.
-  Defined.
- 
+   
 
   Context `{fs : Funext}.
  
   Lemma map_to_cocone_postcompose (G: graph) (D: diagram G) (P: Type) (C: cocone D P) (X Y: Type) (f: X->Y)
-  : (map_to_cocone C Y) o (postcompose f) == (postcompose_cocone f) o (map_to_cocone C X).
+  : (map_to_cocone C Y) o (postcompose f) == (λ C, map_to_cocone C _ f) o (map_to_cocone C X).
     intros g. destruct C as [q pq].
     refine (path_cocone _ _  _ _ _ _ _).
     + intros i x. reflexivity.
@@ -134,8 +117,8 @@ Section colimit_unicity.
       refine (BuildEquiv _ _ (φP X) _).
       refine (BuildEquiv _ _ (φQ X)^-1 _). 
     + intros X Y i q. simpl. 
-      transitivity ((φQ Y)^-1 (postcompose_cocone i (φP X q))).
-      - assert (H: forall C, postcompose i ((φQ X)^-1 C) =   (φQ Y)^-1 (postcompose_cocone i C)); [|apply H].
+      transitivity ((φQ Y)^-1 (map_to_cocone (φP X q) _ i)).
+      - assert (H: forall C, postcompose i ((φQ X)^-1 C) =   (φQ Y)^-1 (map_to_cocone C _ i)); [|apply H].
         clear colimP φP C. intros C.
         apply (equiv_inj (φQ Y)). rewrite eisretr.
         specialize (map_to_cocone_postcompose _ D _ C' _ _ i ((φQ X)^-1 C)); intros H.
