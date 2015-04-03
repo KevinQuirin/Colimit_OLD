@@ -2,8 +2,7 @@ Require Import Utf8_core.
 Require Import HoTT.
 Require Import colimit.
 
-
-Section cocone_product.
+Section cocone_product_r.
   
   Context `{fs : Funext}.
 
@@ -12,14 +11,14 @@ Section cocone_product.
 
   Variable A: Type.
   
-  Definition pdt_diagram : diagram G.
+  Definition pdt_diagram_r : diagram G.
     refine (Build_diagram _ _ _).
     + intros i. exact ((D i) * A).
     + simpl. intros i j f x. exact (diagram1 D f (fst x), snd x).
   Defined.
 
  
-  Definition pdt_cocone {Q: Type} (C: cocone D Q) : cocone pdt_diagram (Q * A).
+  Definition pdt_cocone_r {Q: Type} (C: cocone D Q) : cocone pdt_diagram_r (Q * A).
     unfold cocone in *.
     refine (exist _ _ _). simpl in *.
     intros i z. exact (C.1 i (fst z) , snd z).
@@ -28,7 +27,7 @@ Section cocone_product.
   Defined.
 
 
-  Lemma cocone_product : forall (X:Type), cocone pdt_diagram X <~> cocone D (A -> X).
+  Lemma cocone_product_r : forall (X:Type), cocone pdt_diagram_r X <~> cocone D (A -> X).
     intros X.
     refine (equiv_adjointify _ _ _ _).
     + intros C. unfold cocone in *.
@@ -53,9 +52,9 @@ Section cocone_product.
   Defined.
 
     
-  Lemma colimit_product (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit pdt_diagram (Q * A) (pdt_cocone C).
+  Lemma colimit_product_r (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit pdt_diagram_r (Q * A) (pdt_cocone_r C).
     unfold is_colimit. intros X.
-    assert (H': map_to_cocone (pdt_cocone C) X = ((cocone_product X)^-1) o (map_to_cocone C (A -> X)) o ((equiv_uncurry Q _ X)^-1)).
+    assert (H': map_to_cocone (pdt_cocone_r C) X = ((cocone_product_r X)^-1) o (map_to_cocone C (A -> X)) o ((equiv_uncurry Q _ X)^-1)).
     + apply path_forall; intros F.
       refine (path_sigma _ _ _ _ _).
       - reflexivity.
@@ -70,9 +69,81 @@ Section cocone_product.
       refine isequiv_compose. apply H.
   Defined.
 
-End cocone_product.
+End cocone_product_r.
 
 
+Section cocone_product_l.
+  
+  Context `{fs : Funext}.
+
+  Variable G:graph.
+  Variable D: diagram G.
+
+  Variable A: Type.
+  
+  Definition pdt_diagram_l : diagram G.
+    refine (Build_diagram _ _ _).
+    + intros i. exact (A * (D i)).
+    + simpl. intros i j f x. exact (fst x, diagram1 D f (snd x)).
+  Defined.
+
+ 
+  Definition pdt_cocone_l {Q: Type} (C: cocone D Q) : cocone pdt_diagram_l (A*Q).
+    unfold cocone in *.
+    refine (exist _ _ _). simpl in *.
+    intros i z. exact (fst z, C.1 i (snd z)).
+    intros i j f z. simpl.
+    f_ap. exact (C.2 _ _ _ _).
+  Defined.
+
+
+  Lemma cocone_product_l : forall (X:Type), cocone pdt_diagram_l X <~> cocone D (A -> X).
+    intros X.
+    refine (equiv_adjointify _ _ _ _).
+    + intros C. unfold cocone in *.
+      refine (exist _ _ _).
+      intros i x a. exact (C.1 i (a, x)).
+      intros i j f x. simpl. apply path_forall; intros a.
+      exact (C.2 _ _ _ (a,x)).
+    + intros C. unfold cocone in *.
+      refine (exist _ _ _).
+      intros i z. exact (C.1 i (snd z) (fst z)).
+      intros i j f z. simpl.
+      f_ap. exact (C.2 _ _ _ _).
+    + intros [q pp]. simpl.
+      refine (path_sigma _ _ _ _ _).
+      - reflexivity.
+      - simpl. repeat (apply path_forall; intro). apply eta_path_forall.
+    + intros [q pp]. simpl.
+      refine (path_sigma _ _ _ _ _).
+      - reflexivity.
+      - simpl. repeat (apply path_forall; intro). unfold path_forall.
+        rewrite eisretr. reflexivity.
+  Defined.
+
+    
+  Lemma colimit_product_l (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit pdt_diagram_l (A*Q) (pdt_cocone_l C).
+    unfold is_colimit. intros X.
+    assert (H': map_to_cocone (pdt_cocone_l C) X = ((cocone_product_l X)^-1) o (map_to_cocone C (A -> X)) o ((equiv_uncurry Q A X)^-1) o (λ f a, f (snd a,fst a))).
+    + apply path_forall; intros F.
+      refine (path_sigma _ _ _ _ _).
+      - reflexivity.
+      - simpl.
+        apply path_forall; intros i.
+        apply path_forall; intros j.
+        apply path_forall; intros f.
+        apply path_forall; intros z.
+        destruct (C.2 i j f (snd z)). simpl.
+        reflexivity.
+    + rewrite H'. refine isequiv_compose.
+      refine isequiv_compose. refine isequiv_compose.
+      refine (isequiv_adjointify (λ (x : A ∧ Q → X) (a : Q ∧ A), x (snd a, fst a)) (λ (x : Q ∧ A → X) (a : A ∧ Q), x (snd a, fst a)) _ _).
+      { intro x. reflexivity. }
+      { intro x. reflexivity. }
+      apply H.
+  Defined.
+
+End cocone_product_l.
 
 Section colimit_unicity.
 

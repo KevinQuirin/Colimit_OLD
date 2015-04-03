@@ -65,143 +65,65 @@ Section Foo.
   Context `{ua : Univalence}.
   Context `{fs : Funext}.
 
-  Definition Unit_to_BX (X:Type) (BX := LoopSpace X) : Unit -> BX
-    := λ tt, Point X.
-
-  Definition CN_BX (X:Type) (BX := LoopSpace X) := Cech_nerve_diagram (Unit_to_BX X).
-
-  Definition cone_morphism (G:graph) (D: diagram G) (X:Type) (q r: forall i, D i -> X) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
-             (eq_qr : forall i, q i == r i)
-             (eq_pp_qr : forall i j f x, pp_q i j f x @ eq_qr i x = eq_qr j (diagram1 D f x) @ pp_r i j f x)
-  : (existT (λ qq : forall i, D i -> X, forall (i j:G) (f: G i j) (x: D i), qq j (diagram1 D f x) = qq i x) q pp_q) = (r;pp_r).
-    refine (path_sigma' _ (path_forall _ _ (λ i, path_forall _ _ (eq_qr i))) _). simpl.
-    apply path_forall; intro i.
-    apply path_forall; intro j.
-    apply path_forall; intro f.
-    apply path_forall; intro x.
-
-    repeat rewrite transport_forall_constant.
-    rewrite transport_paths_FlFr. simpl.
-    rewrite concat_pp_p. apply moveR_Vp. simpl.
-    rewrite (ap_ap2_path_forall (λ u, D u) (λ _, λ _, X) q r eq_qr i x).
-    rewrite (ap_ap2_path_forall (λ u, D u) (λ _, λ _, X) q r eq_qr j (diagram1 D f x)).
-    apply eq_pp_qr.
+  Lemma ishprop_pullback_pr2
+        (A : Type)
+        (i : nat)
+        (x : ∃ P : A ∧ hProduct A i, char_hPullback (λ a : A, tr (n:=-1) a) i P)
+  : IsHProp
+      (char_hPullback (λ a : A, tr (n:=-1) a) i (let (proj1_sig, _) := x in proj1_sig)).
+    induction i; simpl.
+    apply true_ishprop.
+    refine (trunc_prod). simpl in *.
+    exact (IHi (snd x.1; snd x.2)).
   Qed.
 
-  Definition cocone (G:graph) (D:diagram G) (T:Type) :=
-    {q : forall i, D i -> T & forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x}.
+  Definition prod_diag (A:Type) : diagram Cech_nerve_graph.
+    refine (Build_diagram _ _ _).
+    - simpl. intro i. exact (hProduct A (S i)).
+    - simpl. intros i j [f q]. destruct f. intros x.
+      exact (forget_hProduct A (S j) x q).
+  Defined.
 
- Definition colimit_unicity (G:graph) (D: diagram G) (P Q:Type) (q : forall i, D i -> P) (r : forall i, D i -> Q) (pp_q : forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x) (pp_r : forall (i j:G) (f: G i j) (x: D i), r _ (diagram1 D f x) = r _ x)
-             (colimX : is_colimit G D P q pp_q)
-             (colimY : is_colimit G D Q r pp_r)
- : P <~> Q.
-   unfold is_colimit in *.
-   pose (φP := λ X:Type, (λ f : P → X,
-              (λ (i : G) (x : D i), f (q i x);
-              λ (i j : G) (g : G i j) (x : D i), ap f (pp_q i j g x)))). simpl in φP.
-   
-    refine (equiv_adjointify _ _ _ _).
-    - exact (equiv_inv (IsEquiv := (colimX Y)) (r;pp_r)).
-    - exact (equiv_inv (IsEquiv := (colimY X)) (q;pp_q)).
-    - intro y.
-      match goal with
-        |[|- ?ggg ?rrr (?fff ?qqq _) = _] =>
-         set (g := ggg); set (f := fff); set (rr := rrr); set (qq := qqq)
-      end.
-      set (ff := f qq). set (gg := g rr).
-      revert y.
-      refine (ap10 (f := gg o ff) (g:=idmap) _).
-      refine (@equiv_inj _ _ _ (colimY Y) _ _ _).
+  Definition CN_tr_cocone (A:Type)
+  : cocone (Cech_nerve_diagram (λ a:A, tr (n:=-1) a)) (colimit (prod_diag A)).
+    refine (exist _ _ _); simpl.
+    - intros i X.
+      apply (@colim (Cech_nerve_graph) _ i). exact X.1.
+    - intros i j [f [q Hq]] x; destruct f; simpl.
+      exact (pp (Cech_nerve_graph) (prod_diag A) (j.+1) j (idpath,(q;Hq)) x.1).
+  Defined.
 
-      refine (cone_morphism _ _ _ _ _ _ _ _ _).
-      + intros i x.
-        etransitivity; [simpl | exact (ap10 (apD10 (eisretr _ (IsEquiv := colimX Y) (r;pp_r))..1 i) x)]. simpl.
-        apply ap.
-        exact (ap10 (apD10 (eisretr _ (IsEquiv := colimY X) (q;pp_q))..1 i) x).
-      + simpl. intros i j φ x.
-        rewrite ap_idmap.
-        rewrite ap_compose.
-        unfold ff, gg, qq, rr, f, g. simpl.
-        clear ff; clear gg; clear qq; clear rr; clear f; clear g.
-        unfold equiv_inv.
-        match goal with
-          |[|- ap ?fff (ap ?ggg _) @ (ap _ _ @ _) = _] => set (f := fff); set (g := ggg)
-        end.
-        repeat rewrite concat_p_pp.
-        apply moveR_pM.
-        repeat rewrite concat_pp_p.
-        apply moveL_Mp.
-
-        rewrite <- ap_pp.
-        rewrite <- ap_V.
-        rewrite <- ap_pp.
-        repeat rewrite <- ap10_ap_precompose.
-        rewrite 
-        
-        match goal with
-          |[|- ?PP1 @ (?PP2 @ ?PP3) = ?QQ1 @ (?QQ2 @ ?QQ3)] =>
-           set (P1 := PP1);
-             set (P2 := PP2);
-             set (P3 := PP3);
-             set (Q1 := QQ1);
-             set (Q2 := QQ2);
-             set (Q3 := QQ3)
-        end. simpl in *.
-                                                           
-
+  Lemma inhab_pr2 (A:Type) (i:nat)
+  : forall x:A*(hProduct A i), char_hPullback (λ a : A, tr (n:=-1) a) i x.
+    intro x.
+    induction i. exact tt. simpl.
+    refine (pair _ _).
+    apply path_ishprop.
+    apply IHi.
   Qed.
-      
-  
-  Lemma BX_colimit_CN_BX (G:Type) (BG := LoopSpace G)
-  : is_colimit (Cech_nerve_graph)
-               (CN_BX G)
-               BG
-               (Cech_nerve_commute (Unit_to_BX G))
-               (Cech_nerve_pp (Unit_to_BX G)).
-    intro X.
-    refine (isequiv_adjointify _ _ _ _).
-    - intros [qq p_qq].
-      refine (LoopSpace_rec G X _ _).
-      apply (qq 0).
-      simpl. exact ((tt,tt);tt).
-      intro x.
-      pose (e1 := p_qq 1 0 (idpath,(1;le_n 1)) ((tt,(tt,tt));(Loop x, tt))).
-      pose (e2 := p_qq 1 0 (idpath,(0;(le_S _ _ (le_n 0)))) ((tt,(tt,tt));(Loop x, tt))).
-      exact (e1 @ e2^).
-      (* reflexivity. *)
-    - intros [qq p_qq].
 
-      refine (cone_morphism _ _ _ _ _ _ _ _ _).
-      + intros i x.  simpl.
-      induction i.
-      destruct x as [[x1 x2] x3]; destruct x1, x2, x3.
-      reflexivity.
-      exact ((IHi (snd x.1; snd x.2)) @ (p_qq i.+1 i (idpath,(0;le_0 (i.+1))) x)).
-      + intros i j [f [q Hq]] x. destruct f; simpl.
-
-        match goal with
-          |[|- ap _ ?pp @ _ = _ ] => set (foo := pp)
-        end. simpl in foo.
-        unfold Unit_to_BX in foo; simpl in foo.
-        induction j. simpl. simpl in x.
-
-        destruct (le_1_is_01 q Hq).
-        symmetry in p; destruct p. simpl.
-        admit.
-
-        
-        admit.
-        admit.
+  Lemma colim_prod_diag_CN_tr (A:Type)
+  : is_colimit (Cech_nerve_diagram (λ a:A, tr (n:=-1) a)) (colimit (prod_diag A)) (CN_tr_cocone A).
+    refine (transport_is_colimit (Cech_nerve_graph) (prod_diag A) _ _ _ _ _ _ _ _ _ _ (colimit_is_colimit _ (prod_diag A))); simpl.
+    - intro i. refine (equiv_adjointify _ _ _ _).
+      + intros x. exists x. apply inhab_pr2.
+      + exact pr1.
+      + intros x. apply path_sigma' with idpath.
+        simpl. refine (path_ishprop _ _). apply ishprop_pullback_pr2.
+      + intros x. reflexivity.
+    - intros i j [f [q Hq]]; destruct f; simpl.
+      intro x; reflexivity.
+    - reflexivity.
+    - simpl.
+      apply path_forall; intro i.
+      apply path_forall; intro j.
+      apply path_forall; intros [f [q Hq]]; destruct f.
+      apply path_forall; intro x. simpl. hott_simpl.
+      unfold path_sigma'.
+      pose (p := @pr1_path_sigma). unfold pr1_path in p. rewrite p.
+      hott_simpl.
+  Qed.
 
     
-    - intro φ.
-      simpl. unfold Cech_nerve_commute, Unit_to_BX, LoopSpace_rec.
-      pose (LoopSpace_eta G (λ _ : LoopSpace G, X) φ)^.
-      path_via (LoopSpace_ind G (λ _ : LoopSpace G, X) (φ (Point G))
-                              (λ x : G, apD φ (Loop x))).
-      apply ap. apply path_forall; intro x.
-      rewrite apD_const. hott_simpl.
-      
-  Qed.
       
 End Foo.

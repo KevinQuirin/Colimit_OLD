@@ -1,11 +1,14 @@
 Require Export Utf8_core.
 Require Import HoTT HoTT.hit.Truncations Connectedness Types.Record.
-Require Import equivalence lemmas colimit cech_nerve nat_lemmas.
+Require Import equivalence lemmas colimit cech_nerve nat_lemmas colimit2.
+
+(* We want to prove that [Trunc -1 A] is the colimit of the Cech nerve of [tr: A -> Trunc -1 A]. *)
 
 Section Prod_diagram.
   
   (* We prove here that we can use the real diagram A×...×A -> ... -> A×A -> A instead of the Cech nerve of tr with irrelevant second compenents *)
-  
+
+  Context `{ua : Univalence}.
   Context `{fs : Funext}.
 
   Lemma ishprop_pullback_tr_pr2
@@ -68,3 +71,42 @@ Section Prod_diagram.
   Qed.
       
 End Prod_diagram.
+
+Section TheProof.
+
+  Context `{fs : Funext}.
+  Context `{ua : Univalence}.
+  Open Scope path_scope.
+  Open Scope type_scope.
+
+  (* Sketch of proof :
+     Let [Q] be the colimit of [prod_diag A].
+     As [Trunc -1 A] defines a cocone on [prod_diag A], we have an arrow [Q -> Trunc -1 A].
+     As there is an arrow [A -> Q], it remains to show that [IsHProp Q], so that we have an arrow [Trunc -1 A -> Q] defining an equivalence ([Q] and [Trunc -1 A]) are both [HProp]). *)
+
+  (* To show [IsHProp Q], it suffices to show that : *)
+  Lemma HProp_if_snd_equiv (Q:Type)
+  : IsEquiv (snd : Q*Q -> Q) -> IsHProp Q.
+  Proof.
+    intro H.
+    apply hprop_allpath; intros u v.
+    assert (X : (u,u) = (v,u)).
+    { apply (@equiv_inj _ _ _ H). reflexivity. }
+    exact (ap fst X).
+  Qed.
+
+  Variable (A:Type).
+  Let D := prod_diag A.
+  Let Q := colimit D.
+  Let colimQ := colimit_is_colimit _ D.
+          
+  Lemma isequiv_snd_QQ_if_isequiv_snd_QA
+  : IsEquiv (snd : Q*A -> A) -> IsEquiv (snd : Q*Q -> Q).
+    intro H.
+    pose (foo := colimit_product_r _ _ A _ _ colimQ). fold Q in foo.
+    
+  Admitted.
+
+
+  
+End TheProof.
