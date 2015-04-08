@@ -100,15 +100,6 @@ Section TheProof.
     exact (ap fst X).
   Qed.
 
-  Lemma popo A B C : (A <~> B) -> (A * C <~> B * C).
-    intros F.
-    refine (equiv_adjointify _ _ _ _).
-    intros x. exact (F (fst x), snd x).
-    intros x. exact (F^-1 (fst x), snd x).
-    intros x. simpl. by rewrite eisretr.
-    intros x. simpl. by rewrite eissect.
-  Defined.
-
   
   Variable (A:Type).
   Let D := prod_diag A.
@@ -131,7 +122,7 @@ Section TheProof.
   Defined.
   
   Lemma isequiv_snd_QQ_if_isequiv_snd_QA
-  : IsEquiv (pi : Q*A -> A) -> IsEquiv (snd : Q*Q -> Q).
+  : IsEquiv (pi : Q ∧ A -> A) -> IsEquiv (snd : Q ∧ Q -> Q).
     intro H.
     specialize (colimit_product_l Q colimQ); intros colimQQ.
     set (C1 := pdt_cocone_l Q C) in *. set (D' := pdt_diagram_l D Q) in *.
@@ -140,14 +131,14 @@ Section TheProof.
     { apply (equiv_inj (map_to_cocone C1 Q)).
       rewrite eisretr. refine (path_sigma _ _ _ _ _).
       + funext i. apply path_forall; intros [a [x y]]. simpl. reflexivity.
-      + admit.
+      + admit.                  (* jouable *)
       }
     rewrite eq; clear eq.
     apply (colimit_unicity colimQQ).
     refine (transport_is_colimit _ _ _ _ _ _ _ _ _ _ _ _ colimQ).
     - intros i. simpl. symmetry.
       transitivity ((Q ∧ A) ∧ hProduct A i).
-      apply equiv_prod_assoc. apply popo. refine (BuildEquiv _ _ _ H).
+      apply equiv_prod_assoc. apply equiv_functor_prod_r. refine (BuildEquiv _ _ _ H).
     - intros i j f x. admit.
     - reflexivity. 
     - simpl. admit.
