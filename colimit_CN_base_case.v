@@ -1,22 +1,26 @@
-Require Export Utf8_core.
-Require Import HoTT HoTT.hit.Truncations Connectedness Types.Record.
-Require Import equivalence lemmas colimit cech_nerve nat_lemmas colimit2.
+Require Import Utf8_core.
+Require Import HoTT.
+Require Import equivalence cech_nerve colimit colimit2.
 
-(* We want to prove that [Trunc -1 A] is the colimit of the Cech nerve of [tr: A -> Trunc -1 A]. *)
+Set Implicit Arguments.
+Context `{fs : Funext}.
+Context `{ua : Univalence}.
+
+(* Squash *)
+Notation sq A := (@tr -1 A).  
+
+(* We want to prove that [Trunc -1 A] is the colimit of the Cech nerve of [sq: A -> Trunc -1 A]. *)
 
 Section Prod_diagram.
   
-  (* We prove here that we can use the real diagram A×...×A -> ... -> A×A -> A instead of the Cech nerve of tr with irrelevant second compenents *)
+  (* We prove here that we can use the real diagram A×...×A -> ... -> A×A -> A instead of the Cech nerve of sq with irrelevant second compenents *)
 
-  Context `{ua : Univalence}.
-  Context `{fs : Funext}.
-
-  Lemma ishprop_pullback_tr_pr2
+  Lemma ishprop_pullback_sq_pr2
         (A : Type)
         (i : nat)
-        (x : ∃ P : A ∧ hProduct A i, char_hPullback (λ a : A, tr (n:=-1) a) i P)
+        (x : ∃ P : A ∧ hProduct A i, char_hPullback (sq A) i P)
   : IsHProp
-      (char_hPullback (λ a : A, tr (n:=-1) a) i (let (proj1_sig, _) := x in proj1_sig)).
+      (char_hPullback (sq A) i x.1).
     induction i; simpl.
     apply true_ishprop.
     refine (trunc_prod). simpl in *.
@@ -30,17 +34,17 @@ Section Prod_diagram.
       exact (forget_hProduct A (S j) x q).
   Defined.
 
-  Definition CN_tr_cocone (A:Type)
-  : cocone (Cech_nerve_diagram (λ a:A, tr (n:=-1) a)) (colimit (prod_diag A)).
+  Definition CN_sq_cocone (A:Type) Q (C : cocone (prod_diag A) Q)
+  : cocone (Cech_nerve_diagram (sq A)) Q.
+    destruct C as [q qq].
     refine (exist _ _ _); simpl.
-    - intros i X.
-      apply (@colim (Cech_nerve_graph) _ i). exact X.1.
-    - intros i j [f [q Hq]] x; destruct f; simpl.
-      exact (pp (Cech_nerve_graph) (prod_diag A) (j.+1) j (idpath,(q;Hq)) x.1).
+    - intros i X. apply (q i). exact X.1.
+    - intros i j [f [k Hk]] x; destruct f; simpl.
+      exact (qq (j.+1) j (idpath,(k;Hk)) x.1).
   Defined.
-
-  Lemma inhab_pullback_tr_pr2 (A:Type) (i:nat)
-  : forall x:A*(hProduct A i), char_hPullback (λ a : A, tr (n:=-1) a) i x.
+  
+  Lemma inhab_pullback_sq_pr2 (A:Type) (i:nat)
+  : forall x:A*(hProduct A i), char_hPullback (sq A) i x.
     intro x.
     induction i. exact tt. simpl.
     refine (pair _ _).
@@ -48,14 +52,15 @@ Section Prod_diagram.
     apply IHi.
   Qed.
 
-  Lemma colim_prod_diag_CN_tr (A:Type)
-  : is_colimit (Cech_nerve_diagram (λ a:A, tr (n:=-1) a)) (colimit (prod_diag A)) (CN_tr_cocone A).
-    refine (transport_is_colimit (Cech_nerve_graph) (prod_diag A) _ _ _ _ _ _ _ _ _ _ (colimit_is_colimit _ (prod_diag A))); simpl.
+  Lemma colim_prod_diag_CN_sq (A:Type) Q (C : cocone (prod_diag A) Q)
+  : is_colimit (prod_diag A) Q C -> is_colimit (Cech_nerve_diagram (sq A)) Q (CN_sq_cocone C).
+    intros H.
+    refine (transport_is_colimit _ _ _ _ _ _ _ _ _ _ _ _ H); simpl.
     - intro i. refine (equiv_adjointify _ _ _ _).
-      + intros x. exists x. apply inhab_pullback_tr_pr2.
+      + intros x. exists x. apply inhab_pullback_sq_pr2.
       + exact pr1.
       + intros x. apply path_sigma' with idpath.
-        simpl. refine (path_ishprop _ _). apply ishprop_pullback_tr_pr2.
+        simpl. refine (path_ishprop _ _). apply ishprop_pullback_sq_pr2.
       + intros x. reflexivity.
     - intros i j [f [q Hq]]; destruct f; simpl.
       intro x; reflexivity.
@@ -69,13 +74,13 @@ Section Prod_diagram.
       pose (p := @pr1_path_sigma). unfold pr1_path in p. rewrite p.
       hott_simpl.
   Qed.
-      
+
 End Prod_diagram.
+
+
 
 Section TheProof.
 
-  Context `{fs : Funext}.
-  Context `{ua : Univalence}.
   Open Scope path_scope.
   Open Scope type_scope.
 
@@ -95,18 +100,58 @@ Section TheProof.
     exact (ap fst X).
   Qed.
 
+  Lemma popo A B C : (A <~> B) -> (A * C <~> B * C).
+    intros F.
+    refine (equiv_adjointify _ _ _ _).
+    intros x. exact (F (fst x), snd x).
+    intros x. exact (F^-1 (fst x), snd x).
+    intros x. simpl. by rewrite eisretr.
+    intros x. simpl. by rewrite eissect.
+  Defined.
+
+  
   Variable (A:Type).
   Let D := prod_diag A.
-  Let Q := colimit D.
-  Let colimQ := colimit_is_colimit _ D.
-          
-  Lemma isequiv_snd_QQ_if_isequiv_snd_QA
-  : IsEquiv (snd : Q*A -> A) -> IsEquiv (snd : Q*Q -> Q).
-    intro H.
-    pose (foo := colimit_product_r _ _ A _ _ colimQ). fold Q in foo.
-    
-  Admitted.
+  (* Let D' := Cech_nerve_diagram (sq A). *)
+  Variable Q : Type.
+  Variable C : cocone D Q.
+  Variable (colimQ : is_colimit D Q C).
 
+  Let pi := @snd Q A.
+  
+  Ltac funext a := apply path_forall; intros a.
+
+
+  Lemma C2
+  : cocone (pdt_diagram_l D Q) Q.
+    refine (exist _ _ _).
+    - simpl. intros i [a [x y]]. exact ((C.1 i) (pi (a,x), y)).
+    - intros i j f x. simpl. admit.
+  Defined.
+
+  
+  Lemma isequiv_snd_QQ_if_isequiv_snd_QA
+  : IsEquiv (pi : Q*A -> A) -> IsEquiv (snd : Q*Q -> Q).
+    intro H.
+    specialize (colimit_product_l Q colimQ); intros colimQQ.
+    set (C1 := pdt_cocone_l Q C) in *. set (D' := pdt_diagram_l D Q) in *.
+    unfold is_colimit in colimQQ.
+    assert (eq: @snd Q Q  = (map_to_cocone C1 Q)^-1 C2).
+    { apply (equiv_inj (map_to_cocone C1 Q)).
+      rewrite eisretr. refine (path_sigma _ _ _ _ _).
+      + funext i. apply path_forall; intros [a [x y]]. simpl. reflexivity.
+      + admit.
+      }
+    rewrite eq; clear eq.
+    apply (colimit_unicity colimQQ).
+    refine (transport_is_colimit _ _ _ _ _ _ _ _ _ _ _ _ colimQ).
+    - intros i. simpl. symmetry.
+      transitivity ((Q ∧ A) ∧ hProduct A i).
+      apply equiv_prod_assoc. apply popo. refine (BuildEquiv _ _ _ H).
+    - intros i j f x. admit.
+    - reflexivity. 
+    - simpl. admit.
+  Defined.
 
   
 End TheProof.

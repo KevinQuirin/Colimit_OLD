@@ -2,9 +2,11 @@ Require Import Utf8_core.
 Require Import HoTT.
 Require Import colimit.
 
+Set Implicit Arguments.
+Context `{fs : Funext}.
+
+
 Section cocone_product_r.
-  
-  Context `{fs : Funext}.
 
   Variable G:graph.
   Variable D: diagram G.
@@ -73,8 +75,6 @@ End cocone_product_r.
 
 
 Section cocone_product_l.
-  
-  Context `{fs : Funext}.
 
   Variable G:graph.
   Variable D: diagram G.
@@ -145,15 +145,16 @@ Section cocone_product_l.
 
 End cocone_product_l.
 
+
 Section colimit_unicity.
 
   Definition postcompose {A X Y: Type} (f: X->Y) : (A->X) -> (A->Y) :=
     fun g => f o g.
     
 
-  Lemma yoneda_map (A B: Type) (F: forall X, Equiv (A->X) (B->X))
+  Lemma yoneda_map {A B: Type} (F: forall X, (A->X) <~> (B->X))
         (H: forall (X Y: Type) (i: X->Y), (postcompose i) o (F X) == (F Y) o (postcompose i))
-  : IsEquiv ((F B)^-1 idmap).
+  : IsEquiv ((F B)^-1 idmap).       (* A <~> B *)
     set (f := (F B)^-1 idmap). set (g := (F A) idmap).
     refine (isequiv_adjointify _ g _ _).
     + specialize (H _ _ f idmap). unfold postcompose in H.
@@ -165,10 +166,8 @@ Section colimit_unicity.
   Defined.
 
    
-
-  Context `{fs : Funext}.
  
-  Lemma map_to_cocone_postcompose (G: graph) (D: diagram G) (P: Type) (C: cocone D P) (X Y: Type) (f: X->Y)
+  Lemma map_to_cocone_postcompose {G: graph} {D: diagram G} {P: Type} (C: cocone D P) {X Y: Type} (f: X->Y)
   : (map_to_cocone C Y) o (postcompose f) == (λ C, map_to_cocone C _ f) o (map_to_cocone C X).
     intros g. destruct C as [q pq].
     refine (path_cocone _ _  _ _ _ _ _).
@@ -179,22 +178,28 @@ Section colimit_unicity.
 
 
   Lemma colimit_unicity (G: graph) (D: diagram G) (P Q: Type) (C: cocone D P) (C': cocone D Q) (colimP : is_colimit D P C) (colimQ : is_colimit D Q C')
-  : P <~> Q.
+  : IsEquiv (@equiv_inv _ _ _ (colimP Q) C').      (* P <~> Q *)
     unfold is_colimit in *.
     set (φP := map_to_cocone C) in *.
     set (φQ := map_to_cocone C') in *.
-    refine (BuildEquiv _ _ _  (yoneda_map _ _ _ _)).
-    + intros X. transitivity (cocone D X).
-      refine (BuildEquiv _ _ (φP X) _).
-      refine (BuildEquiv _ _ (φQ X)^-1 _). 
-    + intros X Y i q. simpl. 
-      transitivity ((φQ Y)^-1 (map_to_cocone (φP X q) _ i)).
-      - assert (H: forall C, postcompose i ((φQ X)^-1 C) =   (φQ Y)^-1 (map_to_cocone C _ i)); [|apply H].
-        clear colimP φP C. intros C.
-        apply (equiv_inj (φQ Y)). rewrite eisretr.
-        specialize (map_to_cocone_postcompose _ D _ C' _ _ i ((φQ X)^-1 C)); intros H.
-        rewrite eisretr in H. assumption.
-      - apply ap. symmetry. apply map_to_cocone_postcompose.
+    assert (C' = (φQ Q idmap)).
+      { refine (path_cocone _ _ _ _ _ _ _).
+        intros i x. reflexivity.
+        intros i j f x. simpl. hott_simpl. }
+    rewrite X. clear X.
+    set (F := λ X, BuildEquiv _ _ ((φQ X)^-1 o (φP X)) _).
+    assert ((φP Q)^-1 (φQ Q idmap) = (F Q)^-1 idmap). reflexivity.
+    rewrite X. clear X.
+    refine (yoneda_map F _).
+    intros X Y i q. simpl. 
+    transitivity ((φQ Y)^-1 (map_to_cocone (φP X q) _ i)).
+    - assert (H: forall C, postcompose i ((φQ X)^-1 C) =   (φQ Y)^-1 (map_to_cocone C _ i)); [|apply H].
+      clear F colimP φP C. intros C.
+      apply (equiv_inj (φQ Y)). rewrite eisretr.
+      specialize (map_to_cocone_postcompose  C' i ((φQ X)^-1 C)); intros H.
+      rewrite eisretr in H. assumption.
+    - apply ap. symmetry. apply map_to_cocone_postcompose.
   Defined.
-        
+
+  
 End colimit_unicity.
