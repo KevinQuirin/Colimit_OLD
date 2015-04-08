@@ -126,9 +126,9 @@ Section TheProof.
   : cocone (pdt_diagram_l D Q) Q.
     refine (exist _ _ _).
     - simpl. intros i [a [x y]]. exact ((C.1 i) (pi (a,x), y)).
-    - intros i j f x. simpl. admit.
+    - intros i j f x; destruct (fst f); simpl in *.
+      exact (C.2 (j.+1) j f _).
   Defined.
-
   
   Lemma isequiv_snd_QQ_if_isequiv_snd_QA
   : IsEquiv (pi : Q*A -> A) -> IsEquiv (snd : Q*Q -> Q).
