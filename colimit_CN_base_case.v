@@ -180,18 +180,23 @@ Section TheProof.
   Lemma isequiv_snd_QA
   : IsEquiv (pi : Q ∧ A -> A).
     refine (isequiv_adjointify _ _ _ _).
-    + exact (λ x, (C.1 0 (x, tt), x)).
-    + intros x. reflexivity.
-    + intros x. apply path_prod; [simpl|reflexivity].
+    - exact (λ x, (C.1 0 (x, tt), x)).
+    - intros x. reflexivity.
+    - intros x. apply path_prod; [simpl|reflexivity].
       generalize x; apply ap10.
       specialize (colimit_product_r A colimQ); intros colimQA. unfold is_colimit in *.
       refine (equiv_inj (map_to_cocone (pdt_cocone_r A C) Q) _). 
       refine (path_cocone _ _ _ _ _ _ _).
-      * intros i [z a]. simpl.
+      + intros i [[z z'] a]. simpl.
+        (* Je fais une induction juste parce que je voulais essayer de faire le cas i=0 mais je ne sais pas s'il y a vraiment besoin d'en faire une. *)
+        induction i.
+        * destruct z'; simpl.
+          etransitivity. refine (C.2 1%nat 0 (1,(1%nat; _)) (a, (z, tt))). auto.
+          symmetry. refine (C.2 1%nat 0 (1,(0; _)) (a, (z, tt))). auto.
+        * admit.
 
-        induction i. simpl in z. destruct z as [z ttt]. destruct ttt. simpl.
-        etransitivity. refine (C.2 1%nat 0 (1,(1%nat; _)) (a, (z, tt))). auto.
-        symmetry. refine (C.2 1%nat 0 (1,(0; _)) (a, (z, tt))). auto.
+      + admit.
+  Defined.
 
 
 
