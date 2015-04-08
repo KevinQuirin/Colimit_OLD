@@ -108,14 +108,14 @@ Section TheProof.
   Variable Q : Type.
   Variable C : cocone D Q.
   Variable (colimQ : is_colimit D Q C).
-
+  
   Let pi := @snd Q A.
   
   Ltac funext a := apply path_forall; intros a.
 
 
-  Lemma C2
-  : cocone (pdt_diagram_l D Q) Q.
+  Lemma C2 (D' := pdt_diagram_l D Q)
+  : cocone D' Q.
     refine (exist _ _ _).
     - simpl. intros i [a [x y]]. exact ((C.1 i) (pi (a,x), y)).
     - intros i j f x; destruct (fst f); simpl in *.
@@ -127,11 +127,11 @@ Section TheProof.
     destruct p. reflexivity.
   Defined.
   
-  Lemma isequiv_snd_QQ_if_isequiv_snd_QA
+  Lemma isequiv_snd_QQ_if_isequiv_snd_QA (D' := pdt_diagram_l D Q)
   : IsEquiv (pi : Q ∧ A -> A) -> IsEquiv (snd : Q ∧ Q -> Q).
     intro H.
     specialize (colimit_product_l Q colimQ); intros colimQQ.
-    set (C1 := pdt_cocone_l Q C) in *. set (D' := pdt_diagram_l D Q) in *.
+    set (C1 := pdt_cocone_l Q C) in *. 
     unfold is_colimit in colimQQ.
     assert (eq: @snd Q Q  = (map_to_cocone C1 Q)^-1 C2).
     { apply (equiv_inj (map_to_cocone C1 Q)).
@@ -175,6 +175,26 @@ Section TheProof.
       apply moveR_Vp. 
       exact (concat_Ap (C.2 (j.+1) j (1,(q;Hq))) (path_prod' (y':= snd x) (eisretr pi (fst x)) 1))^. 
   Defined.
+  
 
+  Lemma isequiv_snd_QA
+  : IsEquiv (pi : Q ∧ A -> A).
+    refine (isequiv_adjointify _ _ _ _).
+    + exact (λ x, (C.1 0 (x, tt), x)).
+    + intros x. reflexivity.
+    + intros x. apply path_prod; [simpl|reflexivity].
+      generalize x; apply ap10.
+      specialize (colimit_product_r A colimQ); intros colimQA. unfold is_colimit in *.
+      refine (equiv_inj (map_to_cocone (pdt_cocone_r A C) Q) _). 
+      refine (path_cocone _ _ _ _ _ _ _).
+      * intros i [z a]. simpl.
+
+        induction i. simpl in z. destruct z as [z ttt]. destruct ttt. simpl.
+        etransitivity. refine (C.2 1%nat 0 (1,(1%nat; _)) (a, (z, tt))). auto.
+        symmetry. refine (C.2 1%nat 0 (1,(0; _)) (a, (z, tt))). auto.
+
+
+
+    
   
 End TheProof.
