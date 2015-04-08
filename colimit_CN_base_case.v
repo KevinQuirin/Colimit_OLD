@@ -1,6 +1,7 @@
 Require Import Utf8_core.
 Require Import HoTT.
 Require Import equivalence cech_nerve colimit colimit2.
+Require Import Peano.
 
 Set Implicit Arguments.
 Context `{fs : Funext}.
@@ -120,6 +121,11 @@ Section TheProof.
     - intros i j f x; destruct (fst f); simpl in *.
       exact (C.2 (j.+1) j f _).
   Defined.
+
+  Lemma ap_snd_path_prod_idpath {X Y:Type} (x:X) (y z:Y) (p:y=z)
+  : ap snd (match p in (_ = u) return ((x,y) = (x,u)) with |1 => 1 end) = p.
+    destruct p. reflexivity.
+  Defined.
   
   Lemma isequiv_snd_QQ_if_isequiv_snd_QA
   : IsEquiv (pi : Q ∧ A -> A) -> IsEquiv (snd : Q ∧ Q -> Q).
@@ -129,19 +135,45 @@ Section TheProof.
     unfold is_colimit in colimQQ.
     assert (eq: @snd Q Q  = (map_to_cocone C1 Q)^-1 C2).
     { apply (equiv_inj (map_to_cocone C1 Q)).
-      rewrite eisretr. refine (path_sigma _ _ _ _ _).
-      + funext i. apply path_forall; intros [a [x y]]. simpl. reflexivity.
-      + admit.                  (* jouable *)
+      rewrite eisretr.
+      refine (path_cocone _ _ _ _ _ _ _).
+      + intros i x. reflexivity.
+      + intros i j [f [q Hq]] x; destruct f; simpl.
+        hott_simpl.
+        apply ap_snd_path_prod_idpath.
       }
     rewrite eq; clear eq.
     apply (colimit_unicity colimQQ).
     refine (transport_is_colimit _ _ _ _ _ _ _ _ _ _ _ _ colimQ).
-    - intros i. simpl. symmetry.
+    - intros i. simpl.
+      symmetry.
       transitivity ((Q ∧ A) ∧ hProduct A i).
       apply equiv_prod_assoc. apply equiv_functor_prod_r. refine (BuildEquiv _ _ _ H).
-    - intros i j f x. admit.
+    - intros i j [f [q Hq]] x; destruct f. simpl.
+      exact (ap
+               (λ x : A ∧ A ∧ hProduct A j,
+                      (nat_rect (λ p : nat, p <= j.+1 → A ∧ hProduct A j)
+                                (λ _ : 0 <= j.+1, (fst (snd x), snd (snd x)))
+                                (λ (p : nat) (_ : p <= j.+1 → A ∧ hProduct A j)
+                                   (H : p.+1 <= j.+1),
+                                 (fst x,
+                                  forget_hProduct A j (fst (snd x), snd (snd x))
+                                                  (p; le_pred p.+1 j.+1 H))) q Hq))
+               (path_prod' (y' := snd x) (eisretr pi (fst x)) 1)^). 
     - reflexivity. 
-    - simpl. admit.
+    - simpl.
+      apply path_forall; intro i.
+      apply path_forall; intro j.
+      apply path_forall; intros [f [q Hq]].
+      apply path_forall; intro x.
+      destruct f; simpl. hott_simpl.
+      match goal with
+        |[|- (ap ?X1 (ap ?X2 ?X3) @ _) @ _ = _ ] =>
+         rewrite <- (ap_compose X2 X1 X3)       
+      end.
+      rewrite ap_V. rewrite concat_pp_p.
+      apply moveR_Vp. 
+      exact (concat_Ap (C.2 (j.+1) j (1,(q;Hq))) (path_prod' (y':= snd x) (eisretr pi (fst x)) 1))^. 
   Defined.
 
   
