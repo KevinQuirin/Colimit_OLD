@@ -65,7 +65,9 @@ Section Foo.
   Context `{ua : Univalence}.
   Context `{fs : Funext}.
 
-  Lemma ishprop_pullback_pr2
+  (* We prove here that we can use the real diagram A×...×A -> ... -> A×A -> A instead of the Cech nerve of tr with irrelevant second compenents *)
+  
+  Lemma ishprop_pullback_tr_pr2
         (A : Type)
         (i : nat)
         (x : ∃ P : A ∧ hProduct A i, char_hPullback (λ a : A, tr (n:=-1) a) i P)
@@ -93,7 +95,7 @@ Section Foo.
       exact (pp (Cech_nerve_graph) (prod_diag A) (j.+1) j (idpath,(q;Hq)) x.1).
   Defined.
 
-  Lemma inhab_pr2 (A:Type) (i:nat)
+  Lemma inhab_pullback_tr_pr2 (A:Type) (i:nat)
   : forall x:A*(hProduct A i), char_hPullback (λ a : A, tr (n:=-1) a) i x.
     intro x.
     induction i. exact tt. simpl.
@@ -106,10 +108,10 @@ Section Foo.
   : is_colimit (Cech_nerve_diagram (λ a:A, tr (n:=-1) a)) (colimit (prod_diag A)) (CN_tr_cocone A).
     refine (transport_is_colimit (Cech_nerve_graph) (prod_diag A) _ _ _ _ _ _ _ _ _ _ (colimit_is_colimit _ (prod_diag A))); simpl.
     - intro i. refine (equiv_adjointify _ _ _ _).
-      + intros x. exists x. apply inhab_pr2.
+      + intros x. exists x. apply inhab_pullback_tr_pr2.
       + exact pr1.
       + intros x. apply path_sigma' with idpath.
-        simpl. refine (path_ishprop _ _). apply ishprop_pullback_pr2.
+        simpl. refine (path_ishprop _ _). apply ishprop_pullback_tr_pr2.
       + intros x. reflexivity.
     - intros i j [f [q Hq]]; destruct f; simpl.
       intro x; reflexivity.

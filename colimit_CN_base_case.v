@@ -1,7 +1,7 @@
 Require Import Utf8_core.
 Require Import HoTT.
 Require Import equivalence cech_nerve colimit colimit2.
-Require Import Peano.
+Require Import Peano nat_lemmas.
 
 Set Implicit Arguments.
 Context `{fs : Funext}.
@@ -37,11 +37,10 @@ Section Prod_diagram.
 
   Definition CN_sq_cocone (A:Type) Q (C : cocone (prod_diag A) Q)
   : cocone (Cech_nerve_diagram (sq A)) Q.
-    destruct C as [q qq].
     refine (exist _ _ _); simpl.
-    - intros i X. apply (q i). exact X.1.
+    - intros i X. apply (C.1 i). exact X.1.
     - intros i j [f [k Hk]] x; destruct f; simpl.
-      exact (qq (j.+1) j (idpath,(k;Hk)) x.1).
+      exact (C.2 (j.+1) j (idpath,(k;Hk)) x.1).
   Defined.
   
   Lemma inhab_pullback_sq_pr2 (A:Type) (i:nat)
@@ -73,7 +72,7 @@ Section Prod_diagram.
       apply path_forall; intro x. simpl. hott_simpl.
       unfold path_sigma'.
       pose (p := @pr1_path_sigma). unfold pr1_path in p. rewrite p.
-      hott_simpl.
+      rewrite ap_1. rewrite concat_p1. reflexivity.
   Qed.
 
 End Prod_diagram.
@@ -122,11 +121,7 @@ Section TheProof.
       exact (C.2 (j.+1) j f _).
   Defined.
 
-  Lemma ap_snd_path_prod_idpath {X Y:Type} (x:X) (y z:Y) (p:y=z)
-  : ap snd (match p in (_ = u) return ((x,y) = (x,u)) with |1 => 1 end) = p.
-    destruct p. reflexivity.
-  Defined.
-  
+  (* Using the fact that [Q ∧ Q = Q ∧ (colimit D], we have: *)
   Lemma isequiv_snd_QQ_if_isequiv_snd_QA (D' := pdt_diagram_l D Q)
   : IsEquiv (pi : Q ∧ A -> A) -> IsEquiv (snd : Q ∧ Q -> Q).
     intro H.
@@ -139,8 +134,10 @@ Section TheProof.
       refine (path_cocone _ _ _ _ _ _ _).
       + intros i x. reflexivity.
       + intros i j [f [q Hq]] x; destruct f; simpl.
-        hott_simpl.
-        apply ap_snd_path_prod_idpath.
+        rewrite concat_p1; rewrite concat_1p.
+        apply (ap_snd_path_prod (z := (fst x, C.1 j _))
+                                (z' := (fst x, C.1 j.+1 (snd x)))
+                                1 (C.2 j.+1 j (1, (q; Hq)) (snd x))).
       }
     rewrite eq; clear eq.
     apply (colimit_unicity colimQQ).
@@ -173,9 +170,13 @@ Section TheProof.
       end.
       rewrite ap_V. rewrite concat_pp_p.
       apply moveR_Vp. 
-      exact (concat_Ap (C.2 (j.+1) j (1,(q;Hq))) (path_prod' (y':= snd x) (eisretr pi (fst x)) 1))^. 
+      exact (concat_Ap (C.2 (j.+1) j (1,(q;Hq))) (path_prod' (eisretr pi (fst x)) 1))^. 
   Defined.
-  
+
+  Lemma le_1_Sn (n:nat) : 1 <= S n.
+    induction n. auto.
+    apply le_S. exact IHn.
+  Qed.
 
   Lemma isequiv_snd_QA
   : IsEquiv (pi : Q ∧ A -> A).
@@ -187,15 +188,52 @@ Section TheProof.
       specialize (colimit_product_r A colimQ); intros colimQA. unfold is_colimit in *.
       refine (equiv_inj (map_to_cocone (pdt_cocone_r A C) Q) _). 
       refine (path_cocone _ _ _ _ _ _ _).
-      + intros i [[z z'] a]. simpl.
-        (* Je fais une induction juste parce que je voulais essayer de faire le cas i=0 mais je ne sais pas s'il y a vraiment besoin d'en faire une. *)
+      + intros i [[z z'] a]. simpl in *.
         induction i.
         * destruct z'; simpl.
-          etransitivity. refine (C.2 1%nat 0 (1,(1%nat; _)) (a, (z, tt))). auto.
-          symmetry. refine (C.2 1%nat 0 (1,(0; _)) (a, (z, tt))). auto.
-        * admit.
+          etransitivity; [exact (C.2 1%nat 0 (1,(1%nat; le_n 1)) (a, (z, tt))) | exact (C.2 1%nat 0 (1,(0; le_0 _)) (a, (z, tt)))^]. 
+        * etransitivity; [exact (IHi (snd z')) | idtac].
+          etransitivity; [idtac | exact (C.2 (i.+1) i (1,(1%nat; le_1_Sn _)) (z,z'))].
+          apply ap. refine (path_prod _ _ _ _).
+          reflexivity.
+          destruct i; [apply path_ishprop | reflexivity].
+      + intros i j [f [q Hq]] u; destruct f; simpl.
+        match goal with
+            |[|- ?PP @ _ = _] => assert (X : 1 = PP)
+          end.
+        { unfold path_prod'. simpl.
+          rewrite (ap_compose pi (λ x, C.1 0 (x,tt))).
+          unfold pi. rewrite ap_snd_path_prod. reflexivity. }
+        destruct X; rewrite concat_1p.
+        match goal with
+            |[|- _ = _ @ ?PP] => assert (X : (C.2 j.+1 j (1, (q; Hq)) (fst u)) = PP)
+          end.
+          { unfold path_prod'. simpl.
+            rewrite ap_fst_path_prod. reflexivity. }
+          destruct X.
 
-      + admit.
+        induction j; simpl.
+        * destruct u as [[u1 [u2 u]] v]. simpl in *.
+          destruct u. 
+          destruct (le_1_is_01 q Hq).
+          symmetry in p; destruct p. simpl.
+          assert (X : 1 = (path_ishprop tt tt)).
+          { apply path_ishprop. }
+          destruct X. simpl; rewrite concat_1p.
+          assert (X : le_0 1 = Hq).
+          { refine (path_ishprop _ _). apply IsHProp_le. }
+          destruct X.
+          apply moveR_pM.
+          rewrite concat_pp_p.
+          pose (C.2 1%nat 0 (1, (1%nat; le_n 1)) (v, (u1, tt))). simpl in p.
+          pose ((C.2 1%nat 0 (1, (0; le_0 1)) (v, (u1, tt)))^). simpl in p0.
+          admit.
+          symmetry in p; destruct p; simpl.
+          admit.
+        * 
+
+
+        admit.
   Defined.
 
 

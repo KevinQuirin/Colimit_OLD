@@ -25,7 +25,7 @@ Section cocone_product_r.
     refine (exist _ _ _). simpl in *.
     intros i z. exact (C.1 i (fst z) , snd z).
     intros i j f z. simpl.
-    f_ap. exact (C.2 _ _ _ _).
+    exact (path_prod' (C.2 i j f (fst z)) 1). 
   Defined.
 
 
