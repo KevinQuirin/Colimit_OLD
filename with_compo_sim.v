@@ -15,20 +15,17 @@ Section Cocone_composition.
   Global Arguments G1 [G i j] f : rename.
   Global Arguments Comp [G i k j] g f : rename.
   
-  Fixpoint ev {G: graph} {D: diagram G} {i j: G} (f: generated_function i j) (x: D i) : D j :=
-    match f with
-      | G1 f => diagram1 D f x
-      | Comp _ g f => diagram1 D g (ev f x)
-    end.
-
-
+  Definition ev {G: graph} {D: diagram G} {i j: G} (f: generated_function i j) (x: D i) : D j.
+    induction f; [exact (diagram1 D g x) | exact (diagram1 D g (IHf))].
+  Defined.
+  
   (* ça unifie pas... *)
   Record cocone_composition {G: graph} (D: diagram G) (X:Type) :=
     { q : forall i, D i -> X;
       H : forall {i j:G} (f: generated_function i j) (x: D i), q j (ev f x) = q i x;
       H2 : forall (i j k:G) (g: G j k) (f: generated_function i j) (x:D i),
-             @paths (q k (diagram1 D g (ev f x)) = q i x)
-                    (H (Comp g f) x)
+             (* @paths (q k (diagram1 D g (ev f x)) = q i x) *)
+                    (H (Comp g f) x) =
                     ((H (G1 g) (ev f x)) @ (H f x)) }.
 
 
