@@ -1,5 +1,5 @@
-Require Import HoTT MyTacs.
-Require Import colimit equivalence Peano nat_lemmas.
+Require Import HoTT.Basics HoTT.Types MyTacs.
+Require Import colimit equivalence Peano nat_lemmas lemmas.
 
 Context `{fs : Funext}.
 Context `{ua : Univalence}.
@@ -33,7 +33,28 @@ Section Cocone_composition.
   Global Arguments H2 [G D X] C [i j k] g f x: rename.
   Global Arguments Build_cocone_composition [G D X] q H H2: rename.
 
-    
+
+
+Definition path_cocone_composition_naive {G: graph} {D: diagram G} {X:Type} {C C': cocone_composition D X}
+           (P := λ qq, forall {i j:G} (f: generated_function i j) (x: D i), qq j (ev f x) = qq i x)
+           (Q := λ (qq:forall i, D i -> X), λ (HH: forall (i j:G) (f: generated_function i j) (x: D i), qq j (ev f x) = qq i x), forall (i j k:G) (g: G j k) (f: generated_function i j) (x:D i),
+                                       HH _ _ (g O f) x = (HH _ _ (G1 g) (ev f x)) @ (HH _ _ f x))
+             (eq0 : q C = q C')
+             (eq1 : transport P eq0 (H C) = H C')
+             (eq2 : transport _ eq1 (transportD P Q eq0 (H C) (H2 C)) = H2 C')
+: C = C' :=
+  match eq2 in (_ = v2) return C = {|q := q C'; H := H C'; H2 := v2|} with
+    | idpath =>
+      match eq1 in (_ = v1) return C = {|q := q C'; H := v1; H2 := eq1 # (transportD P Q eq0 (H C) (H2 C)) |} with
+        | idpath =>
+          match eq0 in (_ = v0) return C = {|q := v0; H := eq0 # (H C); H2 := transportD P Q eq0 (H C) (H2 C) |} with
+            | idpath => idpath
+          end
+      end
+  end.
+          
+
+
   Definition path1 {G: graph} {D: diagram G} {X:Type} {C C': cocone_composition D X}
              (eq0 : forall i, q C i == q C' i)
              (eq1 : forall {i j} f x, (H C f x) @ (eq0 i x) = (eq0 j (ev f x)) @ (H C' f x))
@@ -53,28 +74,26 @@ Section Cocone_composition.
   : (H C (g O f) x) @ (eq0 i x) = (eq0 _ (ev (g O f) x)) @ (H C' (G1 g) (ev f x)) @ (H C' f x).
     etransitivity. apply eq1. etransitivity; [| apply concat_p_pp].
     apply whiskerL. apply H2.
-    Defined.
+  Defined.
 
+  
+    
   Definition path_cocone_composition {G: graph} {D: diagram G} {X:Type} {C C': cocone_composition D X}  
              (eq0 : forall i, q C i == q C' i)
              (eq1 : forall i j f x, (H C f x) @ (eq0 i x) = (eq0 j (ev f x)) @ (H C' f x))
              (eq2 : forall i j k g f x, path1 eq0 eq1 i j k g f x = path2 eq0 eq1 i j k g f x)
   : C = C'.
+    refine (path_cocone_composition_naive _ _ _).
+    - funext i. by apply path_forall.
+    - funext i. funext j. funext f. funext x.
+      repeat rewrite transport_forall_constant. 
+      rewrite transport_paths_FlFr. 
+      rewrite concat_pp_p. apply moveR_Vp. 
+      rewrite (ap_ap2_path_forall _ _ _ _ eq0 i x).
+      rewrite (ap_ap2_path_forall _ _ _ _ eq0 j (ev f x)).
+      apply eq1.
+    -       
   Admitted.
-(*  destruct q as [q pp_q], r as [r pp_r].
-    refine (path_sigma' _ (path_forall _ _ (λ i, path_forall _ _ (eq_qr i))) _). simpl.
-    apply path_forall; intro i.
-    apply path_forall; intro j.
-    apply path_forall; intro f.
-    apply path_forall; intro x.
-
-    repeat rewrite transport_forall_constant.
-    rewrite transport_paths_FlFr. simpl.
-    rewrite concat_pp_p. apply moveR_Vp. simpl.
-    rewrite (ap_ap2_path_forall (λ u, D u) (λ _, λ _, X) q r eq_qr i x).
-    rewrite (ap_ap2_path_forall (λ u, D u) (λ _, λ _, X) q r eq_qr j (diagram1 D f x)).
-    apply eq_pp_qr.
-    Qed.*)
     
 
   Definition map_to_cocone_composition {G: graph} {D: diagram G} {X: Type} (C: cocone_composition D X) (Y: Type) (h: X -> Y) : cocone_composition D Y.
@@ -129,6 +148,11 @@ Section cocone_product_r.
     exact (ap (λ z, (diagram1 D g (fst z), snd z)) IHf).
   Defined.
 
+  Lemma feq2 {AA B C: Type} (f: AA -> B -> C) x x' y y' (H: x = x') (H2: y = y')
+  : f x y = f x' y'.
+    exact (ap11 (ap f H) H2).
+  Defined.
+
   Lemma cocone_product_r (X:Type) : cocone_composition pdt_diagram_r X <~> cocone_composition D (A -> X).
      refine (equiv_adjointify _ _ _ _).
     - intros C.
@@ -137,14 +161,48 @@ Section cocone_product_r.
       + intros i j f x. simpl. funext a.
         etransitivity; [| exact (H C f (x,a))].
         apply ap. exact (ev_pdt_r _ _ _)^.
-      + intros i j k g f x. simpl. try apply path_forall_pp. admit.
-
+      + intros i j k g f x. simpl.
+        etransitivity; [|apply path_forall_pp].
+        apply ap. funext a.
+        rewrite (inverse_ap (λ z : D j ∧ A, (diagram1 D g (fst z), snd z)) (ev_pdt_r f x a)).
+        rewrite <- (ap_compose (λ z : D j ∧ A, (diagram1 D g (fst z), snd z)) (q C k) (ev_pdt_r f x a)^).
+        hott_simpl. rewrite (H2 C). hott_simpl. apply whiskerR.
+        exact (concat_Ap (H C (G1 g)) (ev_pdt_r f x a)^).
     - intros C. refine (Build_cocone_composition _ _ _).
       + intros i z. exact (q C i (fst z) (snd z)).
       + intros i j f z. simpl.
         etransitivity; [refine (ap (λ x, q C j (fst x) (snd x)) (ev_pdt_r _ _ _)) |].
         simpl. refine (ap10 _ _). exact (H C _ _).
-      + intros i j k g f x. simpl. hott_simpl. admit.
+      + intros i j k g f x. simpl. unfold ev_pdt_r. hott_simpl.
+        match goal with
+            [|- (ap ?gg (ap ?ff ?FF)) @ ap10 _ _ =  ((ap10 _ _) @ ap _ ?FF) @ ap10 _ _
+            ] => set (F := FF); set (f' := ff); set (g' := gg); rewrite <- (ap_compose f' g' F)
+        end.
+        repeat rewrite <- (ap_apply_l).
+        rewrite (H2 C). rewrite ap_pp. 
+        hott_simpl. apply whiskerR.
+        etransitivity. apply (concat_Ap (ap (λ f0 : A → X, f0 (snd x))) F).
+      rewrite
+        rewrite <- ap_concat.
+
+
+                    ap10_ap_precompose:
+  ∀ (A B C : Type) (f : A → B) (g g' : B → C) (p : g = g') 
+  (a : A), ap10 (ap (λ h : B → C, h o f) p) a = ap10 p (f a)
+ap10_ap_postcompose:
+  ∀ (A B C : Type) (f : B → C) (g g' : A → B) (p : g = g') 
+  (a : A), ap10 (ap (λ h : A → B, f o h) p) a = ap f (ap10 p a)
+ap11_is_ap10_ap01:
+  ∀ (A B : Type) (f g : A → B) (h : f = g) (x y : A) 
+  (p : x = y), ap11 h p = ap10 h x @ ap g p
+        set (CC := (generated_function_rect G i
+           (λ (j0 : G) (f0 : generated_function i j0),
+            ev f0  (D := pdt_diagram_r) (fst x, snd x) = (ev f0 (fst x), snd x))
+           (λ (k0 : G) (g0 : G i k0), idpath)
+           (λ (k0 j0 : G) (g0 : G j0 k0) (f0 : generated_function i j0)
+            (IHf : ev f0  (D := pdt_diagram_r) (fst x, snd x) = (ev f0 (fst x), snd x)),
+            ap (λ z : D j0 ∧ A, (diagram1 D g0 (fst z), snd z)) IHf) j f)) in *.
+        admit.
 
     - intros C. refine (path_cocone_composition _ _ _); simpl.
       + intros i x. reflexivity.
