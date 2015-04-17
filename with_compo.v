@@ -65,17 +65,36 @@ Section IsColimit_composition.
   
 End IsColimit_composition.
 
-Section Cech_nerve.
-
-  Definition Cech_nerve_graph : graph_composition.
-    refine (Build_graph_composition _ _ _).
-    - exact nat.
-    - intros m n.
-      exact ((S n = m) /\ (nat_interval m)).
-    - intros x y z f g. simpl in *.
-      
+Section Kernel_pair.
   
-End Cech_nerve.
+  Definition KP_graph : graph_composition.
+    refine (Build_graph_composition _ _ _).
+    - exact Bool.
+    - intros i j.
+      exact (match i, j with
+        |true, false => Bool
+        |true, true => Bool + Unit
+        |false, false => Unit
+        |false, true => Unit
+             end).
+    - intros i j k f g.
+      simpl in *.
+      destruct i.
+      (* i= true *)
+      destruct j.
+      (* j=true *)
+      destruct k.
+      (* k = true *)
+      destruct f, g.
+      destruct b.
+      exact g.
+      (* k=false *)
+      
+
+
+  
+End Kernel_pair.
+
 
 Module Export colimit_composition.
 
