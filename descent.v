@@ -1,6 +1,7 @@
 Require Export Utf8_core.
 Require Import HoTT.
 Require Import equivalence lemmas colimit.
+Require Import MyTacs.
 
 Set Universe Polymorphism.
 Global Set Primitive Projections.
@@ -141,11 +142,12 @@ Section Descent.
       refine (path_sigma' _ _ _).
       apply path_sigma' with 1.
       simpl.
-      apply path_forall; intro i.
-      apply path_forall; intro j.
-      apply path_forall; intro g.
-      apply path_forall; intro u.
-      apply path_forall; intro v.
+      funext'; intros i j g u v.
+      (* apply path_forall; intro i. *)
+      (* apply path_forall; intro j. *)
+      (* apply path_forall; intro g. *)
+      (* apply path_forall; intro u. *)
+      (* apply path_forall; intro v. *)
       rewrite ap_V. rewrite colimit_rectnd_beta_pp.
       rewrite inv_V. apply transport_path_universe. 
       apply path_ishprop.
