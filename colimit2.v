@@ -1,9 +1,10 @@
-Require Import Utf8_core.
-Require Import HoTT.
+Require Import MyTacs HoTT.
 Require Import colimit.
 
 Set Implicit Arguments.
+
 Context `{fs : Funext}.
+Context `{ua : Univalence}.
 
 
 Section cocone_product_r.
@@ -54,7 +55,7 @@ Section cocone_product_r.
   Defined.
 
     
-  Lemma colimit_product_r (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit pdt_diagram_r (Q * A) (pdt_cocone_r C).
+  Lemma colimit_product_r (Q:Type) (C: cocone D Q) (H: is_colimit C) : is_colimit (pdt_cocone_r C).
     unfold is_colimit. intros X.
     assert (H': map_to_cocone (pdt_cocone_r C) X = ((cocone_product_r X)^-1) o (map_to_cocone C (A -> X)) o ((equiv_uncurry Q _ X)^-1)).
     + apply path_forall; intros F.
@@ -122,7 +123,7 @@ Section cocone_product_l.
   Defined.
 
     
-  Lemma colimit_product_l (Q:Type) (C: cocone D Q) (H: is_colimit D Q C) : is_colimit pdt_diagram_l (A*Q) (pdt_cocone_l C).
+  Lemma colimit_product_l (Q:Type) (C: cocone D Q) (H: is_colimit C) : is_colimit (pdt_cocone_l C).
     unfold is_colimit. intros X.
     assert (H': map_to_cocone (pdt_cocone_l C) X = ((cocone_product_l X)^-1) o (map_to_cocone C (A -> X)) o ((equiv_uncurry Q A X)^-1) o (λ f a, f (snd a,fst a))).
     + apply path_forall; intros F.
@@ -170,20 +171,20 @@ Section colimit_unicity.
   Lemma map_to_cocone_postcompose {G: graph} {D: diagram G} {P: Type} (C: cocone D P) {X Y: Type} (f: X->Y)
   : (map_to_cocone C Y) o (postcompose f) == (λ C, map_to_cocone C _ f) o (map_to_cocone C X).
     intros g. destruct C as [q pq].
-    refine (path_cocone _ _  _ _ _ _ _).
+    refine (path_cocone _ _).
     + intros i x. reflexivity.
     + unfold postcompose. simpl.
     intros i j f0 x.  hott_simpl. apply ap_compose.
   Defined.
 
 
-  Lemma colimit_unicity (G: graph) (D: diagram G) (P Q: Type) (C: cocone D P) (C': cocone D Q) (colimP : is_colimit D P C) (colimQ : is_colimit D Q C')
+  Lemma colimit_unicity (G: graph) (D: diagram G) (P Q: Type) (C: cocone D P) (C': cocone D Q) (colimP : is_colimit C) (colimQ : is_colimit C')
   : IsEquiv (@equiv_inv _ _ _ (colimP Q) C').      (* P <~> Q *)
     unfold is_colimit in *.
     set (φP := map_to_cocone C) in *.
     set (φQ := map_to_cocone C') in *.
     assert (C' = (φQ Q idmap)).
-      { refine (path_cocone _ _ _ _ _ _ _).
+      { refine (path_cocone _ _).
         intros i x. reflexivity.
         intros i j f x. simpl. hott_simpl. }
     rewrite X. clear X.

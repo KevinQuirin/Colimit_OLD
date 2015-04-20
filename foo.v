@@ -1,4 +1,4 @@
-Require Export Utf8_core.
+(*Require Export Utf8_core.
 Require Import HoTT HoTT.hit.Truncations Connectedness Types.Record.
 Require Import equivalence lemmas colimit cech_nerve nat_lemmas.
 
@@ -128,4 +128,4 @@ Section Foo.
 
     
       
-End Foo.
+End Foo.*)

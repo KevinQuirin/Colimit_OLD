@@ -1,13 +1,10 @@
 Require Export Utf8_core.
 Require Import HoTT.
-Require Import hit.Connectedness hit.Truncations Types.Paths.
-Require Import univalence.
 
-Set Universe Polymorphism.
 Set Implicit Arguments.
 
 Local Open Scope path_scope.
-(* Local Open Scope equiv_scope. *)
+
 
 Section Lemmas.
 

@@ -1,20 +1,12 @@
-Require Export Utf8_core.
-Require Import HoTT HoTT.hit.Truncations Connectedness.
-Require Import colimit.
-Require Import Peano.
-Require Import nat_lemmas.
-Require Import sub_object_classifier equivalence.
+Require Import MyTacs HoTT.
+Require Import equivalence lemmas nat_lemmas Peano colimit.
 
-Set Universe Polymorphism.
-Global Set Primitive Projections.
-(* Set Implicit Arguments. *)
-
-Local Open Scope path_scope.
-(* Local Open Scope equiv_scope. *)
-Local Open Scope type_scope.
+Context `{fs : Funext}.
+Context `{ua : Univalence}.
+  
 
 Section hProduct.
-
+  Definition a:nat := 12.
   Fixpoint hProduct (Y:Type) (n:nat) : Type :=
     match n with
       |0 => Unit
@@ -43,7 +35,6 @@ Section hProduct.
 End hProduct.
 
 Section hPullback.
-  Context `{ua: Univalence}.
   
   Definition char_hPullback {X Y:Type} (f:Y -> X) (n:nat) (P : hProduct Y (S n))
   : Type.
@@ -67,7 +58,7 @@ Section hPullback.
   : forall p:{p:nat & p <= n.+1}, (char_hPullback f n (forget_hProduct Y (S n) x p)).
     intros [p Hp].
     induction (decidable_paths_nat 0 p) as [| a].
-    { destruct a. simpl in *.
+    { destruct a0. simpl in *.
       exact (snd P). }
     
     induction (decidable_paths_nat (S n) p) as [| b].
@@ -97,7 +88,7 @@ Section hPullback.
       destruct Hp'.
       assert (n' := ge_succ_succ (S p') _ l0).
       destruct n' as [n' Hn']. destruct Hn'.  
-      specialize (IHp' (p'.+1) 1 n' (snd x) (snd P)). simpl. split.
+      specialize (IHp' (p'.+1) idpath n' (snd x) (snd P)). simpl. split.
       exact (fst P).
       apply IHp'.
       exact (le_pred _ _ l0).
@@ -127,10 +118,9 @@ Section hPullback.
 
 End hPullback.
 
+
 Section Cech_Nerve.
   
-  Context `{ua: Univalence}.
-
   (* Definition 8*)
   Definition Cech_nerve_graph : graph.
     refine (Build_graph _ _).

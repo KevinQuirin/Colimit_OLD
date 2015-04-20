@@ -1,5 +1,5 @@
-Require Import HoTT.Basics HoTT.Types MyTacs.
-Require Import colimit equivalence Peano nat_lemmas lemmas.
+Require Import MyTacs HoTT.
+Require Import cech_nerve colimit colimit2 equivalence Peano nat_lemmas lemmas colimit_CN_base_case.
 
 Context `{fs : Funext}.
 Context `{ua : Univalence}.
@@ -148,11 +148,7 @@ Section cocone_product_r.
     exact (ap (λ z, (diagram1 D g (fst z), snd z)) IHf).
   Defined.
 
-  Lemma feq2 {AA B C: Type} (f: AA -> B -> C) x x' y y' (H: x = x') (H2: y = y')
-  : f x y = f x' y'.
-    exact (ap11 (ap f H) H2).
-  Defined.
-
+  (*
   Lemma cocone_product_r (X:Type) : cocone_composition pdt_diagram_r X <~> cocone_composition D (A -> X).
      refine (equiv_adjointify _ _ _ _).
     - intros C.
@@ -225,23 +221,107 @@ ap11_is_ap10_ap01:
         admit.
       + admit.
   Defined.
+*)
 
     
   Lemma colimit_product_r {Q: Type} {C: cocone_composition D Q} (HQ: is_colimit_composition C) : is_colimit_composition (pdt_cocone_r C).
-    intros X.
+Admitted.
+    (*    intros X.
     assert (H': map_to_cocone_composition (pdt_cocone_r C) X = ((cocone_product_r X)^-1) o (map_to_cocone_composition C (A -> X)) o ((equiv_uncurry Q _ X)^-1)).
     - funext F.
       refine (path_cocone_composition _ _ _).
       + intros i z. reflexivity.
-      + intros i j f z. Abort.
-
-
+      + intros i j f z.
   
         destruct (C.2 i j f (fst z)). simpl.
         reflexivity.
     + rewrite H'. refine isequiv_compose.
       refine isequiv_compose. apply H.
   Defined.
-
+*)
 End cocone_product_r.
 
+
+
+
+
+Section TheProof.
+
+  
+  Variable (A:Type).
+  Let D := prod_diag A.
+  Variable Q : Type.
+  Variable C : cocone_composition D Q.
+  Variable (colimQ : is_colimit_composition C).
+  
+  Let pi := @snd Q A.
+
+  Lemma le_1_Sn (n:nat) : 1 <= S n.
+    induction n. auto.
+    apply le_S. exact IHn.
+  Qed.
+
+  Lemma isequiv_snd_QA
+  : IsEquiv (pi : Q ∧ A -> A).
+    refine (isequiv_adjointify _ _ _ _).
+    - exact (λ x, (q C 0 (x, tt), x)).
+    - intros x. reflexivity.
+    - intros x. apply path_prod; [simpl|reflexivity].
+      generalize x; apply ap10.
+      specialize (colimit_product_r _ _ A colimQ); intros colimQA. unfold is_colimit in *.
+      refine (equiv_inj (map_to_cocone_composition (pdt_cocone_r _ _ A C) Q) _). shelve.
+      refine (path_cocone_composition _ _ _).
+      + intros i [[z z'] a]. simpl in *.
+        induction i.
+        * destruct z'; simpl. 
+          etransitivity. exact (H C (@G1 Cech_nerve_graph 1 0 (idpath,(1; le_n 1))) (a, (z, tt))).
+          exact (H C (@G1 Cech_nerve_graph 1%nat 0 (idpath,(0; le_0 _))) (a, (z, tt)))^. 
+        * etransitivity; [exact (IHi (snd z')) |].
+          etransitivity; [| exact (H C (@G1 Cech_nerve_graph (i.+1) i (idpath,(1%nat; le_1_Sn _))) (z,z'))].
+          apply ap. refine (path_prod _ _ _ _). reflexivity.
+          destruct i; [apply path_ishprop | reflexivity].
+      + induction i; intros j f; induction f. destruct g as [f [q Hq]]. shelve. destruct f; simpl. intros u.
+        Admitted. (*
+        match goal with
+            |[|- ?PP @ _ = _] => assert (X : 1 = PP)
+          end.
+        { unfold path_prod'. simpl.
+          rewrite (ap_compose pi (λ x, C.1 0 (x,tt))).
+          unfold pi. rewrite ap_snd_path_prod. reflexivity. }
+        destruct X; rewrite concat_1p.
+        match goal with
+            |[|- _ = _ @ ?PP] => assert (X : (C.2 j.+1 j (1, (q; Hq)) (fst u)) = PP)
+          end.
+          { unfold path_prod'. simpl.
+            rewrite ap_fst_path_prod. reflexivity. }
+          destruct X.
+
+        induction j; simpl.
+        * destruct u as [[u1 [u2 u]] v]. simpl in *.
+          destruct u. 
+          destruct (le_1_is_01 q Hq).
+          symmetry in p; destruct p. simpl.
+          assert (X : 1 = (path_ishprop tt tt)).
+          { apply path_ishprop. }
+          destruct X. simpl; rewrite concat_1p.
+          assert (X : le_0 1 = Hq).
+          { refine (path_ishprop _ _). apply IsHProp_le. }
+          destruct X.
+          apply moveR_pM.
+          rewrite concat_pp_p.
+          pose (C.2 1%nat 0 (1, (1%nat; le_n 1)) (v, (u1, tt))). simpl in p.
+          pose ((C.2 1%nat 0 (1, (0; le_0 1)) (v, (u1, tt)))^). simpl in p0.
+          admit.
+          symmetry in p; destruct p; simpl.
+          admit.
+        * 
+
+
+        admit.
+  Defined.
+*)
+
+
+    
+  
+End TheProof.

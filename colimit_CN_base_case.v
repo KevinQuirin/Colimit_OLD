@@ -1,11 +1,11 @@
-Require Import Utf8_core.
-Require Import HoTT.
-Require Import equivalence cech_nerve colimit colimit2.
-Require Import Peano nat_lemmas.
+Require Import MyTacs HoTT.
+Require Import Peano nat_lemmas equivalence cech_nerve colimit colimit2.
 
 Set Implicit Arguments.
+
 Context `{fs : Funext}.
 Context `{ua : Univalence}.
+
 
 (* Squash *)
 Notation sq A := (@tr -1 A).  
@@ -35,7 +35,7 @@ Section Prod_diagram.
       exact (forget_hProduct A (S j) x q).
   Defined.
 
-  Definition CN_sq_cocone (A:Type) Q (C : cocone (prod_diag A) Q)
+  Definition CN_sq_cocone {A Q: Type} (C: cocone (prod_diag A) Q)
   : cocone (Cech_nerve_diagram (sq A)) Q.
     refine (exist _ _ _); simpl.
     - intros i X. apply (C.1 i). exact X.1.
@@ -53,7 +53,7 @@ Section Prod_diagram.
   Qed.
 
   Lemma colim_prod_diag_CN_sq (A:Type) Q (C : cocone (prod_diag A) Q)
-  : is_colimit (prod_diag A) Q C -> is_colimit (Cech_nerve_diagram (sq A)) Q (CN_sq_cocone C).
+  : is_colimit C -> is_colimit (CN_sq_cocone C).
     intros H.
     refine (transport_is_colimit _ _ _ _ _ _ _ _ _ _ _ _ H); simpl.
     - intro i. refine (equiv_adjointify _ _ _ _).
@@ -106,7 +106,7 @@ Section TheProof.
   (* Let D' := Cech_nerve_diagram (sq A). *)
   Variable Q : Type.
   Variable C : cocone D Q.
-  Variable (colimQ : is_colimit D Q C).
+  Variable (colimQ : is_colimit C).
   
   Let pi := @snd Q A.
   
@@ -131,7 +131,7 @@ Section TheProof.
     assert (eq: @snd Q Q  = (map_to_cocone C1 Q)^-1 C2).
     { apply (equiv_inj (map_to_cocone C1 Q)).
       rewrite eisretr.
-      refine (path_cocone _ _ _ _ _ _ _).
+      refine (path_cocone _ _).
       + intros i x. reflexivity.
       + intros i j [f [q Hq]] x; destruct f; simpl.
         rewrite concat_p1; rewrite concat_1p.
@@ -187,7 +187,7 @@ Section TheProof.
       generalize x; apply ap10.
       specialize (colimit_product_r A colimQ); intros colimQA. unfold is_colimit in *.
       refine (equiv_inj (map_to_cocone (pdt_cocone_r A C) Q) _). 
-      refine (path_cocone _ _ _ _ _ _ _).
+      refine (path_cocone _ _).
       + intros i [[z z'] a]. simpl in *.
         induction i.
         * destruct z'; simpl.
@@ -227,14 +227,9 @@ Section TheProof.
           rewrite concat_pp_p.
           pose (C.2 1%nat 0 (1, (1%nat; le_n 1)) (v, (u1, tt))). simpl in p.
           pose ((C.2 1%nat 0 (1, (0; le_0 1)) (v, (u1, tt)))^). simpl in p0.
-          admit.
+          shelve.
           symmetry in p; destruct p; simpl.
-          admit.
-        * 
-
-
-        admit.
-  Defined.
+Admitted.
 
 
 

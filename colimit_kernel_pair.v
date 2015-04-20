@@ -1,11 +1,11 @@
-Require Import Utf8_core.
-Require Import HoTT.
-Require Import equivalence cech_nerve colimit colimit2.
-Require Import Peano nat_lemmas.
+Require Import MyTacs HoTT.
+Require Import Peano nat_lemmas equivalence cech_nerve colimit colimit2.
 
 Set Implicit Arguments.
+
 Context `{fs : Funext}.
 Context `{ua : Univalence}.
+
 
 (* Squash *)
 Notation sq A := (@tr -1 A).  
@@ -13,7 +13,6 @@ Notation sq A := (@tr -1 A).
 (* We want to prove that [Trunc -1 A] is the colimit of the Cech nerve of [sq: A -> Trunc -1 A]. *)
 
 Section Prod_diagram.
-  
 
   Definition kernel_pair_graph : graph.
     refine (Build_graph Bool _).
@@ -28,43 +27,19 @@ Section Prod_diagram.
       destruct f.
   Defined.
 
-
 End Prod_diagram.
 
 
 
 Section TheProof.
-
-  Open Scope path_scope.
-  Open Scope type_scope.
-
-  (* Sketch of proof :
-     Let [Q] be the colimit of [prod_diag A].
-     As [Trunc -1 A] defines a cocone on [prod_diag A], we have an arrow [Q -> Trunc -1 A].
-     As there is an arrow [A -> Q], it remains to show that [IsHProp Q], so that we have an arrow [Trunc -1 A -> Q] defining an equivalence ([Q] and [Trunc -1 A]) are both [HProp]). *)
-
-  (* To show [IsHProp Q], it suffices to show that : *)
-  Lemma HProp_if_snd_equiv (Q:Type)
-  : IsEquiv (snd : Q*Q -> Q) -> IsHProp Q.
-  Proof.
-    intro H.
-    apply hprop_allpath; intros u v.
-    assert (X : (u,u) = (v,u)).
-    { apply (@equiv_inj _ _ _ H). reflexivity. }
-    exact (ap fst X).
-  Qed.
-
   
   Variable (A:Type).
   Let D := prod_diag A.
   Variable Q : Type.
   Variable C : cocone D Q.
-  Variable (colimQ : is_colimit D Q C).
+  Variable (colimQ : is_colimit C).
   
   Let pi := @snd Q A.
-  
-  Ltac funext a := apply path_forall; intros a.
-
 
   Lemma isequiv_snd_QA
   : IsEquiv (pi : Q ∧ A -> A).
@@ -75,7 +50,7 @@ Section TheProof.
       generalize x; apply ap10. clear x.
       specialize (colimit_product_r A colimQ); intros colimQA. unfold is_colimit in *.
       refine (equiv_inj (map_to_cocone (pdt_cocone_r A C) Q) _). 
-      refine (path_cocone _ _ _ _ _ _ _).
+      refine (path_cocone _ _).
       + intros i. simpl. set (H := C.2 true false); set (q := C.1) in *; simpl in q; simpl in H.
         destruct i.
         * intros [[x x'] y]. simpl.
@@ -88,7 +63,7 @@ Section TheProof.
         intros i j f. destruct i; destruct j; destruct f; simpl.
         * intros [[x x'] y]. simpl. fold H0 H1.
           match goal with
-            |[|- ?CC1 @ (?CC2 @ (?CC3^ @ ?CC4)) = (?CC5 @ ?CC6^) @ ?CC7] => assert (CC1 = 1)
+            |[|- ?CC1 @ (?CC2 @ (?CC3^ @ ?CC4)) = (?CC5 @ ?CC6^) @ ?CC7] => assert (CC1 = idpath)
           end.
           { etransitivity. unfold path_prod'.
           refine (ap_compose' _ _ _). etransitivity; [|apply ap_1]. apply ap.
@@ -99,10 +74,10 @@ Section TheProof.
           end. 
           apply ap_fst_path_prod. rewrite X; clear X.
 
-          admit.
+          shelve.
         * intros [[x x'] y]. simpl. fold H0 H1.
           match goal with
-            |[|- ?CC1 @ (?CC2 @ (?CC3^ @ ?CC4)) = (?CC5 @ ?CC6) @ ?CC7] => assert (CC1 = 1)
+            |[|- ?CC1 @ (?CC2 @ (?CC3^ @ ?CC4)) = (?CC5 @ ?CC6) @ ?CC7] => assert (CC1 = idpath)
           end. 
           { etransitivity. unfold path_prod'.
           refine (ap_compose' _ _ _). etransitivity; [|apply ap_1]. apply ap.
@@ -114,7 +89,7 @@ Section TheProof.
           { apply ap_fst_path_prod. }
           rewrite X; clear X.
           reflexivity.
-Defined.
+Admitted.
 
   
 End TheProof.

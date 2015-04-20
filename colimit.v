@@ -1,11 +1,9 @@
-Require Export Utf8_core.
-Require Import HoTT.
+Require Import MyTacs HoTT.
 Require Import equivalence lemmas.
 
-Set Universe Polymorphism.
-Global Set Primitive Projections.
-
-Local Open Scope path_scope.
+Context `{fs : Funext}.
+Context `{ua : Univalence}.
+  
 
 Section Diagram.
 
@@ -22,9 +20,6 @@ Section Diagram.
   Global Arguments diagram0 [G] D i : rename.
   Global Arguments diagram1 [G] D [i j] f x : rename.
   
-  Context `{fs : Funext}.
-  Context `{ua : Univalence}.
-  
   Lemma path_diagram (G:graph) (D1 D2: diagram G)
   : {path_type : (diagram0 D1) = (diagram0 D2) 
     & forall (i j:G), forall x:G i j, diagram1 D1 x == (equiv_path _ _ (ap10 path_type j)^) o (diagram1 D2 x) o (equiv_path _ _ (ap10 path_type i)) }
@@ -34,11 +29,7 @@ Section Diagram.
     destruct D1 as [T1 m1], D2 as [T2 m2]; simpl in *.
     destruct path_type. simpl in path_map.
     assert (p : m1 = m2).
-
-    apply path_forall; intro i.
-    apply path_forall; intro j.
-    apply path_forall; intro x.
-    apply path_forall; intro X.
+    funext4 i j x X.
     exact (path_map i j x X).
     destruct p.
     reflexivity.
@@ -46,23 +37,20 @@ Section Diagram.
   
 End Diagram.
 
+
 Section Cocone.
   
   Definition cocone {G:graph} (D:diagram G) (T:Type) :=
     {q : forall i, D i -> T & forall (i j:G) (f: G i j) (x: D i), q _ (diagram1 D f x) = q _ x}.
 
   
-  Definition path_cocone `{fs : Funext} (G:graph) (D: diagram G) (X:Type) (q r: cocone D X)  
+  Definition path_cocone {G:graph} {D: diagram G} {X:Type} {q r: cocone D X}  
              (eq_qr : forall i, q.1 i == r.1 i)
              (eq_pp_qr : forall i j f x, q.2 i j f x @ eq_qr i x = eq_qr j (diagram1 D f x) @ r.2 i j f x)
-  : q=r.
+  : q = r.
     destruct q as [q pp_q], r as [r pp_r].
     refine (path_sigma' _ (path_forall _ _ (λ i, path_forall _ _ (eq_qr i))) _). simpl.
-    apply path_forall; intro i.
-    apply path_forall; intro j.
-    apply path_forall; intro f.
-    apply path_forall; intro x.
-
+    funext4 i j f x.
     repeat rewrite transport_forall_constant.
     rewrite transport_paths_FlFr. simpl.
     rewrite concat_pp_p. apply moveR_Vp. simpl.
@@ -72,6 +60,7 @@ Section Cocone.
   Qed.
   
 End Cocone.
+
 
 (* In this module is the higher inductive definition of colimits *)
 Module Export colimit_HIT.
@@ -140,23 +129,20 @@ Section colimit_nondep.
 End colimit_nondep.
 
 
-
 Section colimit_universal_property.
 
-  Context `{fs : Funext}.
-
-  Definition map_to_cocone {G:graph} {D:diagram G} {P:Type} (q:cocone D P) (X:Type) : (P -> X) -> cocone D X.
+  Definition map_to_cocone {G: graph} {D: diagram G} {P: Type} (q:cocone D P) (X:Type) : (P -> X) -> cocone D X.
     intros f.
     refine (exist _ _ _).
     - intros i x. exact (f (q.1 i x)).
     - intros i j g x. exact (ap f (q.2 i j g x)).
   Defined.
 
-  Definition is_colimit {G:graph} (D:diagram G) (P:Type) (q:cocone D P)
-    := forall X:Type, IsEquiv (map_to_cocone q X).
+  Definition is_colimit {G: graph} {D: diagram G} {P: Type} (q:cocone D P)
+    := forall (X: Type), IsEquiv (map_to_cocone q X).
   
   Theorem colimit_is_colimit (G:graph) (D:diagram G) 
-  : is_colimit D (colimit D) ((@colim G D); (@pp G D)).
+  : is_colimit ((@colim G D); (@pp G D)).
     intro Y; simpl.
     refine (isequiv_adjointify _ _ _ _).
     - intros [q pp_q].
@@ -175,12 +161,11 @@ Section colimit_universal_property.
       rewrite colimit_rectnd_beta_pp. hott_simpl.
   Qed.
 
-
   
   Definition colimit_equiv (G:graph) (D:diagram G)
     := λ X, BuildEquiv _ _ _ (colimit_is_colimit G D X).
 
-  Definition transport_is_colimit `{ua : Univalence} (G:graph) (D1 D2:diagram G)
+  Definition transport_is_colimit (G:graph) (D1 D2:diagram G)
              (path_type : forall i, diagram0 D1 i <~> diagram0 D2 i)
              (path_comm : forall (i j:G), forall x:G i j, diagram1 D1 x == (path_type j)^-1 o (diagram1 D2 x) o (path_type i))
              (P:Type)
@@ -195,8 +180,8 @@ Section colimit_universal_property.
                                (diagram1 D2 f (path_type i x)) @
                                (pp_q2 i j f (path_type i x) @
                                       ((apD10 (apD10 Hq i) (path_type i x))^ @ ap (q1 i) (eissect (path_type i) x))))) = pp_q1)
-             (H : is_colimit D1 P (q1; pp_q1))
-  : is_colimit D2 P (q2; pp_q2).
+             (H : is_colimit (q1; pp_q1))
+  : is_colimit (q2; pp_q2).
     destruct Hq.
     destruct Hpp.
     simpl in *.    
@@ -318,12 +303,12 @@ Section colimit_universal_property.
        (eisretr (path_type i) x)^ @
      ap (q1 i)
        (eissect (path_type i)
-                     ((path_type i)^-1 x))) = 1).
+                     ((path_type i)^-1 x))) = idpath).
         { rewrite ap_compose. rewrite <- ap_pp.
           assert (X0 : (ap ((path_type i)^-1)
         (eisretr (path_type i) x)^ @
       eissect (path_type i)
-      ((path_type i)^-1 x)) = 1).
+      ((path_type i)^-1 x)) = idpath).
           { rewrite ap_V. apply moveR_Vp. hott_simpl.
             apply (other_adj (path_type i)). }
           rewrite X0; clear X0. reflexivity. }

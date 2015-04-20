@@ -1,7 +1,6 @@
 Require Export Utf8_core.
 Require Import HoTT.
-Require Import univalence.
-Require Import lemmas epi_mono.
+Require Import lemmas .
 
 Set Universe Polymorphism.
 Set Implicit Arguments.
@@ -80,31 +79,6 @@ apply (isequiv_adjointify _ (equiv_is_mono_f _ x y)).
   destruct (eissect x); reflexivity.
 Defined.
 
-Definition equiv_is_mono (A B:Type) (f: A -> B) : IsEquiv f -> IsMono f :=
-  fun H x y => equiv_is_mono_eq _ _ _.
-  
-Definition truncn_unique n (A B : Trunk n) : A.1 = B.1 -> A = B.
-  intro e. apply eq_dep_subset. intro. apply hprop_trunc. exact e.
-Defined.
-
-Arguments equiv_path A B p : simpl never.
-
-Definition isequiv_truncn_unique n (A B : Trunk n)
-: IsEquiv (truncn_unique A B).
-  unfold truncn_unique.
-  apply isequiv_adjointify with (g := ap pr1).
-  - intro p; simpl.
-    destruct p; simpl. unfold truncn_unique. simpl.
-    destruct A as [A TrA]. simpl.
-    apply (transport (λ U, path_sigma' (λ T, IsTrunc n T) 1 U = 1) (@contr (TrA = TrA) _ 1)^).
-    reflexivity.
-  - intro p; unfold truncn_unique; simpl.
-    destruct A as [A TrA], B as [B TrB]. simpl in p. destruct p. simpl.
-    assert (fo := path_ishprop TrA TrB). destruct fo.
-    unfold path_ishprop.
-    apply (transport (λ U, ap pr1 (path_sigma' (λ T : Type, IsTrunc n T) 1 U) = 1) (@contr (TrA = TrA) _ 1)^).
-    reflexivity.   
-Defined.
 
 
 Instance Tn_is_TSn : forall n, IsTrunc (trunc_S n) (Trunk n). (* Cf HoTT *)
@@ -128,18 +102,6 @@ Definition HProp_contr A (B : A -> Type) (BProp : forall a, IsHProp (B a)) (a a'
   intro. apply (@path2_contr _ (contr_inhabited_hprop (B a) b) b b').
 Defined.
 
-Instance subset_is_subobject A (B : A -> Type) (BProp : forall a, IsHProp (B a)) x y : 
-  IsEquiv (ap (@pr1 A B) (x:=x) (y:=y)).
-destruct x as [x b], y as [x0 b0].
-apply  (isequiv_adjointify (ap (@pr1 A B) (x:=(x;b)) (y:=(x0;b0)))
-                           (eq_dep_subset BProp (x;b) (x0;b0))). 
-- intro. unfold eq_dep_subset; simpl in *. destruct x1.
-  apply (pr1_path_sigma (P:=B) (u:=(x;b)) (v:=(x;b0)) 1 (center (b = b0))). 
-- intro. unfold eq_dep_subset, path_sigma'; simpl in *. 
-  pose (foo := eta_path_sigma x1). etransitivity; try exact foo. 
-  apply ap. destruct (@HProp_contr A B BProp x x0 b b0 x1..1).
-  etransitivity; try apply contr. symmetry. apply contr.
-Defined.
 
 Definition elim_E A B (f:A->B) (H:IsEquiv f) (x y : A) (p : f x = f y)
 : x = y :=
@@ -156,11 +118,6 @@ Defined.
 
 Definition HTrue := (Unit; true_ishprop) : HProp.
 
-Theorem univalence_hprop' (A B: HProp) : (A.1 <-> B.1) -> A = B.
-Proof.
-  destruct A, B. intro. apply eq_dep_subset. intro. apply hprop_trunc.
-  apply univalence_hprop; auto.
-Defined.
 
 Lemma equal_equiv (A B:Type) (f g : A -> B) (eq_f : IsEquiv f) (eq_g : IsEquiv g)
 : f = g -> (BuildEquiv _ _ f eq_f) = (BuildEquiv _ _ g eq_g).

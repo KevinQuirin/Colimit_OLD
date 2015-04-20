@@ -1,6 +1,5 @@
-Require Export Utf8_core.
-Require Import HoTT.
-Require Import MyTacs equivalence lemmas colimit.
+Require Import MyTacs HoTT.
+Require Import equivalence lemmas colimit.
 
 Context `{fs : Funext}.
 
@@ -28,11 +27,11 @@ Section Coproduct.
   Defined.
 
   Lemma is_coproduct_coproduct (A B: Type)
-  : is_colimit _ _ (coproduct_cocone A B).
+  : is_colimit (coproduct_cocone A B).
     intros X.
     refine (isequiv_adjointify _ _ _ _).
     - intros C x. destruct x. exact (C.1 true a). exact (C.1 false b).
-    - intros C. refine (path_cocone _ _ _ _ _ _ _).
+    - intros C. refine (path_cocone _ _).
       + intros i x; destruct i; reflexivity.
       + intros i j f x; destruct i, j, f.
     - intros F. funext x; destruct x; reflexivity.
@@ -65,14 +64,14 @@ Section Coequalizer.
   Defined.
 
   Lemma is_coequalizer_coequalizer {B A: Type} (f g: B -> A)
-  : is_colimit _ _ (coequalizer_cocone f g).
+  : is_colimit (coequalizer_cocone f g).
     intros X.
     refine (isequiv_adjointify _ _ _ _).
     - intros C. refine (Coeq_rec _ _ _). exact (C.1 false).
       intros b. etransitivity.
       exact (C.2 true false true b).
       exact (C.2 true false false b)^.
-    - intros C. refine (path_cocone _ _ _ _ _ _ _).
+    - intros C. refine (path_cocone _ _).
       + intros i x; destruct i; simpl. exact (C.2 true false false x). reflexivity.
       + intros i j φ x; destruct i, j, φ; simpl.
         * hott_simpl.
@@ -136,14 +135,14 @@ Section Pushout.
   Defined.
 
   Lemma is_pushout_pushout {A B C:Type} (f:A -> B) (g:A -> C)
-  : is_colimit _ _ (pushout_cocone f g).
+  : is_colimit (pushout_cocone f g).
     intros X. refine (isequiv_adjointify _ _ _ _).
     - intros Co. refine (pushout_rec _ _ _).
       + intros x; induction x. exact (Co.1 Pushout_Right a). exact (Co.1 Pushout_Down b).
       + intros a. simpl. etransitivity. exact (Co.2 Pushout_Corner Pushout_Right tt a).
         exact (Co.2 Pushout_Corner Pushout_Down tt a)^.
     - intros Co.
-      refine (path_cocone _ _ _ _ _ _ _).
+      refine (path_cocone _ _).
       + induction i; intros x; simpl; try reflexivity. exact (Co.2 Pushout_Corner Pushout_Right tt x).
       + induction i, j, f0; simpl. reflexivity.
         intros x. hott_simpl. rewrite <- inverse_ap.

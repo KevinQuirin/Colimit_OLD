@@ -183,7 +183,7 @@ Section Descent.
       pose (FamequivPow (colimit (Rezk_P1_diag G D Y f))). unfold Fam in e. simpl in e.
 
       intro y. 
-    
+Abort.    
       
   
 End Descent.

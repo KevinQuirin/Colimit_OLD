@@ -1,10 +1,9 @@
-Require Import Utf8_core.
-Require Import HoTT.
-Require Import equivalence cech_nerve colimit colimit2.
-Require Import Peano nat_lemmas.
+Require Import MyTacs HoTT.
+Require Import Peano nat_lemmas equivalence.
 
 Context `{fs : Funext}.
 Context `{ua : Univalence}.
+
 
 Section Graph_with_composition.
 
@@ -87,8 +86,7 @@ Section Kernel_pair.
       (* k = true *)
       destruct f, g.
       destruct b.
-      exact g.
-      (* k=false *)
+Admitted.
       
 
 
@@ -110,6 +108,7 @@ Module Export colimit_composition.
   Axiom coh_cmp : forall (G:graph_composition) (D:diagram_composition G), forall x y z:G, forall Ɣ:G x y, forall δ:G y z, forall a:D x,
                   ap inc (cmp D Ɣ δ a) @ (glue D (graph2 δ Ɣ) a) = (glue D δ (diagram1 D Ɣ a)) @ (glue D Ɣ a).      
 
+  (*
   Definition colimit_rect (G:graph_composition) (D: diagram_composition G) (P : colimit_composition D -> Type)
              (q : forall {i}, forall x, P (colim x))
              (pp_q : forall (i j:G) (f : G i j) (x:D i), (@glue G D i j f x) # (q (diagram1 D f x)) = q x)
@@ -130,5 +129,6 @@ Module Export colimit_composition.
   : colimit_rect G D P (@q) pp_q (@colim _ _ i x) = q x.
     reflexivity.
   Defined.
-  
-End colimit_HIT.
+*)  
+
+End colimit_composition.
