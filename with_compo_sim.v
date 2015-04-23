@@ -16,11 +16,16 @@ Section Cocone_composition.
 
   Notation "g 'O' f" := (G22 g f) (at level 40).
 
-   
+  Record graph_with_composition : Type :=
+    {GG: graph; eqq: forall (i j :GG), relation (G2 i j)}.
+
+  
   Definition ev {G: graph} {D: diagram G} {i j: G} (f: G2 i j) : D i -> D j.
     induction f; [exact (diagram1 D g) | exact ((diagram1 D g) o (diagram1 D g0))].
   Defined.
 
+  Record diagram_with_composition {G: graph_with_composition} : Type :=
+    { D: diagram (GG G); HD: forall (i j: (GG G)) (f f': G2 i j), (forall (x: D i), ev f x = ev f' x) -> eqq G i j f f'  }.
  
   Record cocone_composition {G: graph} (D: diagram G) (X:Type) :=
     { q : forall i, D i -> X;
