@@ -1,7 +1,7 @@
 Require Export Utf8_core.
 Require Import HoTT.
 
-Section Funext.
+
 
   (** We define a tactic [funext], working as: *)
   (** - if one calls [funext] with no arguments, then [funext] applies [path_forall] as much as possible, and introduces fresh names (the ones that would be introduced by [intros.] *)
@@ -46,4 +46,3 @@ Section Funext.
 
   Tactic Notation (at level 2) "funext" simple_intropattern_list(a) := funext'; intros a.
   
-End Funext.

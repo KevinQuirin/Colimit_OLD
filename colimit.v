@@ -15,7 +15,7 @@ Section Diagram.
 
   Record diagram (G : graph) :=
     { diagram0 :> G -> Type;
-      diagram1 : forall (i j : G), G i j -> (diagram0 i -> diagram0 j) }.
+      diagram1 :> forall (i j : G), G i j -> (diagram0 i -> diagram0 j) }.
   
   Global Arguments diagram0 [G] D i : rename.
   Global Arguments diagram1 [G] D [i j] f x : rename.
