@@ -110,8 +110,6 @@ Section TheProof.
   
   Let pi := @snd Q A.
   
-  Ltac funext a := apply path_forall; intros a.
-
 
   Lemma C2 (D' := pdt_diagram_l D Q)
   : cocone D' Q.
@@ -236,3 +234,59 @@ Admitted.
     
   
 End TheProof.
+
+
+Section AnotherAtempt.
+
+  Definition delta : graph.     (* = Cech_nerve_graph *)
+    refine (Build_graph nat _).
+    intros i j. exact ((S j = i) /\ (nat_interval i)).
+  Defined.
+
+  Definition delta_plus: graph.
+    refine (Build_graph nat _).
+    intros i j. exact ((S j = i) /\ (nat_interval j)). 
+  Defined.
+  
+  
+  Definition augment_diag {A B: Type} (D: diagram delta) (π: A -> B): diagram delta_plus.
+    refine (Build_diagram _ _ _).
+    - intros i. destruct i. exact B. exact (D i /\ B).
+    - intros i j [eq f]. destruct j.
+      + destruct eq. exact snd.
+      + destruct eq. intros x. exact (diagram1 D (idpath,f) (fst x), snd x).
+  Defined.
+
+  Definition augment_cocone {A B: Type} (D: diagram delta) (π: A -> B): cocone (augment_diag D π) B.
+    refine (exist _ _ _).
+    - intros i. destruct i. exact idmap. exact snd.
+    - intros i j [eq f]; destruct eq. destruct j; reflexivity.
+  Defined.
+
+  Lemma augment_diag_colimit {A B: Type} (D: diagram delta) (π: A -> B): is_colimit (augment_cocone D π).
+    intros X. refine (isequiv_adjointify _ _ _ _).
+    - intros C. exact (C.1 0).
+    - intros C. refine (path_cocone _ _).
+      + destruct i; simpl. intros x; reflexivity.
+        induction i. exact (C.2 1 0 (idpath, (0; le_0 _))).
+        intros x. etransitivity; [| exact (C.2 (i.+2) (i.+1) (idpath, (0; le_0 _)) x)].
+        simpl. exact (IHi (@diagram1 _ D i.+1 i (idpath, (0; le_0 i.+1)) (fst x), snd x)).
+      + intros i j [eq f] x; destruct eq.
+        destruct j; simpl; hott_simpl.
+        * assert (eq: f = (0; le_0 0)).
+          { destruct f as [k Hk].
+            refine (path_sigma _ _ _ _ _).
+            apply le_0_is_0. assumption.
+            simpl. refine (path_ishprop _ _).
+            apply IsHProp_le. }
+          rewrite eq. reflexivity.
+        * match goal with
+            | [|- ?PP1 @ ?PP2 = ?PP3 @ ?PP4 ] => set (P1 := PP1); set (P2 := PP2); set (P3 := PP3); set (P4 := PP4)
+          end. induction j; simpl in *.
+          shelve. shelve.
+    - intros q. funext b. reflexivity.
+  Admitted.
+        
+
+  
+End AnotherAtempt.
