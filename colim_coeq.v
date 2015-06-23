@@ -1,7 +1,6 @@
 Require Import HoTT hit.Coeq Utf8_core.
 
 Context `{fs : Funext}.
-Context `{ua : Univalence}.
   
 
 Section Diagram.
