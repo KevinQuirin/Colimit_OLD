@@ -323,7 +323,7 @@ Lemma ap_ap2_path_forall (X:Type) (Y : X -> Type) (Z:forall x:X, Y x -> Type) (g
 : ap (λ f:forall x:X, forall y:Y x, Z x y, f x y) (path_forall g h (λ x, path_forall (g x) (h x) (eq x)))
   = eq x y.
   rewrite (ap_compose (λ f : ∀ (x0 : X) (y0 : Y x0), Z x0 y0, f x) (λ f, f y) (path_forall g h (λ x0 : X, path_forall (g x0) (h x0) (eq x0)))).
-  rewrite (ap_ap_path_forall (λ x0 : X, path_forall (g x0) (h x0) (eq x0))).
+  pose (rew := ap_ap_path_forall (λ x0 : X, path_forall (g x0) (h x0) (eq x0))); simpl in rew; rewrite rew; clear rew.
   apply ap_ap_path_forall.
 Qed.
 

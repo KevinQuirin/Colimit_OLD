@@ -375,7 +375,7 @@ Section colimit_universal_property.
       hott_simpl.
       repeat rewrite ap_pp. simpl.
       clear retr; clear sect. clear inv.
-      repeat rewrite (@ap_ap2_path_forall fs G
+      pose (rew := @ap_ap2_path_forall fs G
                                 (λ x, D1 x)
                                 (λ u v, X)
                                 (λ (i0 : G) (y : D1 i0), φ
@@ -383,7 +383,7 @@ Section colimit_universal_property.
                                                                ((path_type i0)^-1
                                                                 (path_type i0 y))))
                                 (λ (i0 : G) (x0 : D1 i0), φ (q1 i0 x0))
-                                (λ i0, λ y : D1 i0, ap φ (ap (q1 i0) (eissect (path_type i0) y)))). 
+                                (λ i0, λ y : D1 i0, ap φ (ap (q1 i0) (eissect (path_type i0) y)))); simpl in rew; repeat rewrite rew; clear rew.
       repeat apply whiskerR.
       apply moveR_Vp.
       rewrite <- ap_pp. rewrite <- ap_pp. rewrite <- (ap_pp (λ x0 : D2 j, φ (q1 j ((path_type j)^-1 x0)))).
