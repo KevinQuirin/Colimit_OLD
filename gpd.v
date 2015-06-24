@@ -41,12 +41,28 @@ End Gpd.
 Section Colimit_Gpd.
 
   
+  (* Lemma transport_hfiber {X Y:Type} (f:X -> Y) (y z:Y) (a:hfiber f y) (b:hfiber f z) (p:y=z) (q:p # a = b) *)
+  (* : transport (λ u:Y, hfiber f u) p a = b. *)
+  (* Proof. *)
+  (*   pose (@transport_sigma' Y X (λ y x, f x = y) y z p a); simpl in p0. *)
+    
+  (*   destruct p. simpl. exact q. Defined. *)
+  
   Local Notation T f i := (Gpd_aux f i).1.
   Local Notation α f i := (Gpd_aux f i).2.
 
   Variables X Y:Type. Variable f:X -> Y.
   Local Notation Tf i := (T f i).
   Local Notation αf i := (α f i).
+
+  Lemma bar (T:Type) (A B: T -> Type) (g h:forall y:T, A y -> B y) (y z:T) (p:y=z)
+    : forall (b:B y) (b':B z) (q: p # b = b'), transport (λ u, Coeq (g u) (h u)) p (@coeq _ _ (g y) (h y) b) = @coeq _ _ (g z) (h z) b'.
+  Proof.
+    intros b b'.
+    destruct p. simpl.
+    exact (ap coeq).
+  Defined.
+
   
   Lemma foo : {y:Y & T (λ x:hfiber f y, tt) 1} <~> T f 1.
   Proof.
@@ -100,18 +116,23 @@ Section Colimit_Gpd.
     - refine (Coeq_rec _ _ _).
       simpl. intro x.
       exact (f x; coeq (x;1)).
-      
       intros p; simpl in *.
-      apply path_sigma' with p.2.2. 
-    
-      etransitivity; [idtac | exact (@cp _ _ (fst : (hfiber f (f p.2.1))*(hfiber f (f p.2.1)) -> _) snd ((p.1;p.2.2), (p.2.1;1)))].
-      destruct p.2.2. reflexivity.
+      apply path_sigma' with p.2.2.     
+      etransitivity; [idtac | exact (@cp _ _ (fst : (hfiber f (f p.2.1))*(hfiber f (f p.2.1)) -> _) snd ((p.1;p.2.2), (p.2.1;1)))]. cbn.
+
+      apply (@bar Y (λ y, (hfiber f y)*(hfiber f y)) (λ y, hfiber f y) (λ _, fst) (λ _, snd) (f p.1) (f p.2.1) p.2.2 (p.1;1) (p.1;p.2.2)).
+      abstract (
+          pose (@transport_sigma' Y X (λ y x, f x = y) (f p.1) (f p.2.1) p.2.2 (p.1;1)); simpl in p0;
+          rewrite transport_paths_FlFr in p0; simpl in p0;
+          rewrite ap_const in p0; rewrite ap_idmap in p0;
+          simpl in p0; rewrite concat_1p in p0; exact p0 ).
+      
     - cbn.
       refine (Coeq_ind _ _ _).
       intro a. reflexivity.
-      cbn. intro p.
+      cbn. intros [a [b p]].
       rewrite transport_paths_FlFr.
       rewrite ap_idmap.
-
+      cbn.
 
 End Colimit_Gpd.
